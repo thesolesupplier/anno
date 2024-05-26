@@ -38,6 +38,7 @@ async fn main() {
     #[cfg(debug_assertions)]
     {
         let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+        println!("App listening at http://localhost:3000");
         axum::serve(listener, app).await.unwrap();
     }
 
