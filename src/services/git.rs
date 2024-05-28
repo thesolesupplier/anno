@@ -43,7 +43,7 @@ impl Git {
                 let change_symbol = get_change_symbol(&line);
                 let content = str::from_utf8(line.content()).unwrap();
 
-                diff_text.push_str(&format!("{}{}", change_symbol, content));
+                diff_text.push_str(&format!("{change_symbol}{content}"));
             }
 
             true
