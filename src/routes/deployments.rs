@@ -6,14 +6,12 @@ use axum::Json;
 use hyper::StatusCode;
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize)]
-struct Commit {
-    id: String,
-}
+pub async fn post_deployment(
+    Json(deployment): Json<Deployment>,
+) -> Result<(StatusCode, Json<ResponseData>), AppError> {
+    let summary = deployment.get_diff_summary().await?;
 
-#[derive(Deserialize)]
-struct Repository {
-    full_name: String,
+    Ok((StatusCode::OK, Json(ResponseData { summary })))
 }
 
 #[derive(Deserialize)]
@@ -22,18 +20,28 @@ pub struct Deployment {
     repository: Repository,
 }
 
+impl Deployment {
+    pub async fn get_diff_summary(&self) -> Result<String, AppError> {
+        let repo_path = &self.repository.full_name;
+
+        let diff = Git::new(repo_path)?.get_diff_with_head(&self.head_commit.id)?;
+        let summary = chat_gpt::get_diff_summary(&diff).await?;
+
+        Ok(summary)
+    }
+}
+
+#[derive(Deserialize)]
+struct Repository {
+    full_name: String,
+}
+
+#[derive(Deserialize)]
+struct Commit {
+    id: String,
+}
+
 #[derive(Serialize)]
 pub struct ResponseData {
     summary: String,
-}
-
-pub async fn post_deployment(
-    Json(deployment): Json<Deployment>,
-) -> Result<(StatusCode, Json<ResponseData>), AppError> {
-    let repo_path = deployment.repository.full_name;
-
-    let diff = Git::new(&repo_path)?.get_diff_with_head(&deployment.head_commit.id)?;
-    let summary = chat_gpt::get_diff_summary(&diff).await?;
-
-    Ok((StatusCode::OK, Json(ResponseData { summary })))
 }
