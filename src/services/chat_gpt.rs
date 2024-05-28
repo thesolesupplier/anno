@@ -7,7 +7,7 @@ pub async fn get_diff_summary(diff: &str) -> Result<String> {
     let chat_gpt = ChatGPT::new(openai_api_key)?;
 
     let message = format!(
-        "Summarise these diffs in as few sentences as possible, but describe every change made.
+        "Summarise these diffs in as few sentences as possible.
        Write it in this style: \"Updated x dependency, deleted y page, updated z page etc.\":
        {diff}"
     );

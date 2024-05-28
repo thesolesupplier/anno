@@ -13,9 +13,11 @@ impl Git {
 
         let repo_url = format!("https://{user_name}:{token}@github.com/{repo_path}");
 
-        let repo = match Repository::open("./repo") {
+        let repo_write_path = env::var("REPO_WRITE_PATH").expect("REPO_WRITE_PATH should be set");
+
+        let repo = match Repository::open(&repo_write_path) {
             Ok(repo) => repo,
-            Err(_) => Repository::clone(&repo_url, "./repo")?,
+            Err(_) => Repository::clone(&repo_url, &repo_write_path)?,
         };
 
         Ok(Self { repo })
