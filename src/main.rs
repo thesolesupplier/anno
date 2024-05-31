@@ -30,7 +30,7 @@ async fn main() {
         .allow_origin(tower_http::cors::Any);
 
     let app = Router::new()
-        .route("/deployment", post(routes::post_deployment))
+        .route("/workflow", post(routes::post_workflow))
         .layer(cors_layer)
         .layer(trace_layer)
         .layer(CompressionLayer::new().gzip(true).deflate(true));

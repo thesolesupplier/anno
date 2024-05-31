@@ -1,3 +1,3 @@
-pub mod deployments;
+pub mod workflow;
 
-pub use deployments::post_deployment;
+pub use workflow::post_workflow;

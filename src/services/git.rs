@@ -23,9 +23,9 @@ impl Git {
         Ok(Self { repo })
     }
 
-    pub fn get_diff_with_head(&self, commit_hash: &str) -> Result<String> {
-        let old_commit = self.repo.revparse_single(commit_hash)?;
-        let new_commit = self.repo.revparse_single("HEAD")?;
+    pub fn diff(&self, new_commit: &str, old_commit: &str) -> Result<String> {
+        let old_commit = self.repo.revparse_single(old_commit)?;
+        let new_commit = self.repo.revparse_single(new_commit)?;
 
         let old_tree = old_commit.peel_to_tree()?;
         let new_tree = new_commit.peel_to_tree()?;
