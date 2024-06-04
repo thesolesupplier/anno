@@ -5,7 +5,7 @@ use crate::{
 use axum::Json;
 use hyper::StatusCode;
 
-pub async fn post_workflow(workflow: Json<Workflow>) -> Result<StatusCode, AppError> {
+pub async fn post(workflow: Json<Workflow>) -> Result<StatusCode, AppError> {
     if workflow.is_successful_run() {
         let prev_run = workflow.get_prev_successful_run().await?;
 
