@@ -14,7 +14,7 @@ impl Workflow {
         self.action == "completed" && self.workflow_run.conclusion == "success"
     }
 
-    pub async fn get_prev_successful_run(&self) -> Result<WorkflowRun, AppError> {
+    pub async fn get_prev_successful_run(&self) -> Result<Option<WorkflowRun>, AppError> {
         let token = env::var("GITHUB_ACCESS_TOKEN").expect("GITHUB_ACCESS_TOKEN should be set");
 
         let url = format!(
@@ -39,9 +39,13 @@ impl Workflow {
             .await?
             .workflow_runs;
 
+        if workflow_runs.is_empty() {
+            return Ok(None);
+        }
+
         let previous_run = workflow_runs.remove(0);
 
-        Ok(previous_run)
+        Ok(Some(previous_run))
     }
 }
 
