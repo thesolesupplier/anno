@@ -34,8 +34,6 @@ impl WorkflowRuns {
 
         let previous_run = workflow_runs.remove(0);
 
-        println!("Workflow runs: {:#?}", previous_run);
-
         Ok(previous_run)
     }
 }

@@ -40,7 +40,7 @@ impl Workflow {
                 .await?;
 
         let diff =
-            Git::new(repo_path)?.diff(&self.workflow_run.head_sha, &previous_run.head_sha)?;
+            Git::init(repo_path)?.diff(&self.workflow_run.head_sha, &previous_run.head_sha)?;
 
         let summary = chat_gpt::get_diff_summary(&diff).await?;
 

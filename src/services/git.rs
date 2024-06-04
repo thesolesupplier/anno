@@ -7,7 +7,7 @@ pub struct Git {
 }
 
 impl Git {
-    pub fn new(repo_path: &str) -> Result<Self> {
+    pub fn init(repo_path: &str) -> Result<Self> {
         let user_name = env::var("GITHUB_USERNAME").expect("GITHUB_USERNAME should be set");
         let token = env::var("GITHUB_ACCESS_TOKEN").expect("GITHUB_ACCESS_TOKEN should be set");
 
@@ -16,7 +16,11 @@ impl Git {
         let repo_write_path = env::var("REPO_WRITE_PATH").expect("REPO_WRITE_PATH should be set");
 
         let repo = match Repository::open(&repo_write_path) {
-            Ok(repo) => repo,
+            Ok(repo) => {
+                repo.find_remote("origin")?.fetch(&["master"], None, None)?;
+
+                Repository::open(&repo_write_path)?
+            }
             Err(_) => Repository::clone(&repo_url, &repo_write_path)?,
         };
 
@@ -34,6 +38,8 @@ impl Git {
             .repo
             .diff_tree_to_tree(Some(&old_tree), Some(&new_tree), None)?;
 
+        // Check if there is any diff
+        // println!("Diff: {:?}", diff.stats()?);
         let mut diff_text = String::new();
 
         diff.print(DiffFormat::Patch, |delta, _hunk, line| {
@@ -48,6 +54,8 @@ impl Git {
 
             true
         })?;
+
+        println!("{}", diff_text);
 
         Ok(diff_text)
     }
