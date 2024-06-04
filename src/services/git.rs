@@ -1,5 +1,5 @@
 use anyhow::Result;
-use git2::{DiffFormat, DiffLine, Repository};
+use git2::{DiffFormat, Repository};
 use std::{env, str};
 
 pub struct Git {
@@ -46,7 +46,7 @@ impl Git {
             let path = delta.old_file().path().unwrap().to_str().unwrap();
 
             if !path.contains("Cargo.lock") {
-                let change_symbol = get_change_symbol(&line);
+                let change_symbol = line.origin();
                 let content = str::from_utf8(line.content()).unwrap();
 
                 diff_text.push_str(&format!("{change_symbol}{content}"));
@@ -58,12 +58,5 @@ impl Git {
         println!("{}", diff_text);
 
         Ok(diff_text)
-    }
-}
-
-fn get_change_symbol(line: &DiffLine) -> String {
-    match line.origin() {
-        '+' | '-' | ' ' => format!("{} ", line.origin()),
-        _ => String::new(),
     }
 }
