@@ -27,12 +27,12 @@ impl Git {
         Ok(Self { repo })
     }
 
-    pub fn diff(&self, new_commit: &str, old_commit: &str) -> Result<String> {
-        let old_commit = self.repo.revparse_single(old_commit)?;
-        let new_commit = self.repo.revparse_single(new_commit)?;
+    pub fn diff(&self, new_commit_hash: &str, old_commit_hash: &str) -> Result<String> {
+        let new_commit = self.repo.revparse_single(new_commit_hash)?;
+        let old_commit = self.repo.revparse_single(old_commit_hash)?;
 
-        let old_tree = old_commit.peel_to_tree()?;
         let new_tree = new_commit.peel_to_tree()?;
+        let old_tree = old_commit.peel_to_tree()?;
 
         let diff = self
             .repo
