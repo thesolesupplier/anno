@@ -55,8 +55,6 @@ impl Git {
             true
         })?;
 
-        println!("{}", diff_text);
-
         Ok(diff_text)
     }
 }
