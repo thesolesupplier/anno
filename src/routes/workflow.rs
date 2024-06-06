@@ -22,7 +22,9 @@ pub async fn post(GithubEvent(workflow): GithubEvent<Workflow>) -> Result<Status
 
     let summary = chat_gpt::get_diff_summary(&diff).await?;
 
-    println!("Summary: {summary}");
+    println!("------ SUMMARY ------");
+    println!("{summary}");
+    println!("------ END SUMMARY ------");
 
     Ok(StatusCode::OK)
 }
