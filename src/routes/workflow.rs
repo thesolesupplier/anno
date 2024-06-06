@@ -1,11 +1,11 @@
 use crate::{
+    middleware::validation::GithubEvent,
     services::{chat_gpt, github::Workflow, Git},
     utils::error::AppError,
 };
-use axum::Json;
 use hyper::StatusCode;
 
-pub async fn post(workflow: Json<Workflow>) -> Result<StatusCode, AppError> {
+pub async fn post(GithubEvent(workflow): GithubEvent<Workflow>) -> Result<StatusCode, AppError> {
     if !workflow.is_successful_run() {
         return Ok(StatusCode::OK);
     }
