@@ -1,6 +1,6 @@
 use crate::{
     middleware::validation::GithubEvent,
-    services::{chat_gpt, github::Workflow, Git},
+    services::{chat_gpt, github::Workflow, slack, Git},
     utils::error::AppError,
 };
 use hyper::StatusCode;
@@ -25,6 +25,8 @@ pub async fn post(GithubEvent(workflow): GithubEvent<Workflow>) -> Result<Status
     println!("------ SUMMARY ------");
     println!("{summary}");
     println!("------ END SUMMARY ------");
+
+    slack::post_message(&summary).await?;
 
     Ok(StatusCode::OK)
 }
