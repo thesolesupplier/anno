@@ -52,6 +52,17 @@ impl Workflow {
 
         Ok(Some(previous_run))
     }
+
+    pub fn get_diff_url(&self, prev_sha: &str) -> String {
+        format!(
+            "https://github.com/{}/compare/{}...{}",
+            self.repository.full_name, prev_sha, self.workflow_run.head_sha
+        )
+    }
+
+    pub fn get_run_url<'a>(&'a self) -> &'a String {
+        &self.workflow_run.html_url
+    }
 }
 
 #[derive(Deserialize, Debug)]
@@ -60,6 +71,7 @@ pub struct WorkflowRun {
     pub head_sha: String,
     pub created_at: String,
     pub conclusion: String,
+    pub html_url: String,
 }
 
 #[derive(Deserialize)]
