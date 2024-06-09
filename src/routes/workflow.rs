@@ -26,10 +26,7 @@ pub async fn post(GithubEvent(workflow): GithubEvent<Workflow>) -> Result<Status
     println!("{summary}");
     println!("------ END SUMMARY ------");
 
-    let run_url = workflow.get_run_url();
-    let compare_url = workflow.get_diff_url(&prev_run.head_sha);
-
-    slack::post_message(&summary, run_url, compare_url).await?;
+    slack::post_release_message(&summary, &workflow, &prev_run).await?;
 
     Ok(StatusCode::OK)
 }

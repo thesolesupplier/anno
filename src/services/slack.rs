@@ -1,14 +1,22 @@
 use serde_json::json;
 
+use super::github::{Workflow, WorkflowRun};
 use crate::utils::error::AppError;
 use std::env;
 
-pub async fn post_message(
+pub async fn post_release_message(
     message: &str,
-    workflow_url: &str,
-    compare_url: String,
+    workflow: &Workflow,
+    prev_run: &WorkflowRun,
 ) -> Result<(), AppError> {
     let url = env::var("SLACK_WEBHOOK_URL").expect("SLACK_WEBHOOK_URL should be set");
+
+    let run_url = workflow.get_run_url();
+    let compare_url = workflow.get_diff_url(&prev_run.head_sha);
+    let header = format!(
+        "{} release 🚀",
+        uppercase_first_letter(&workflow.repository.name)
+    );
 
     reqwest::Client::new()
         .put(url)
@@ -18,7 +26,7 @@ pub async fn post_message(
                     "type": "header",
                     "text": {
                         "type": "plain_text",
-                        "text": "Bolt Release",
+                        "text": header,
                         "emoji": true
                     }
                 },
@@ -42,7 +50,7 @@ pub async fn post_message(
                                 "text": "View deployment",
                                 "emoji": true
                             },
-                            "url": workflow_url
+                            "url": run_url
                         },
                         {
                             "type": "button",
@@ -62,4 +70,12 @@ pub async fn post_message(
         .error_for_status()?;
 
     Ok(())
+}
+
+fn uppercase_first_letter(s: &str) -> String {
+    let mut c = s.chars();
+    match c.next() {
+        None => String::new(),
+        Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+    }
 }

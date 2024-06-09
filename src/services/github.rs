@@ -77,6 +77,7 @@ pub struct WorkflowRun {
 #[derive(Deserialize)]
 pub struct Repository {
     pub full_name: String,
+    pub name: String,
 }
 
 #[derive(Deserialize)]
