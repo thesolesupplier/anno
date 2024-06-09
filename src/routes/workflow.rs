@@ -14,7 +14,7 @@ pub async fn post(GithubEvent(workflow): GithubEvent<Workflow>) -> Result<Status
         return Ok(StatusCode::OK);
     };
 
-    let repo = Git::init(&workflow.repository.full_name)?;
+    let repo = Git::init(&workflow)?;
 
     let Some(diff) = repo.diff(&workflow.workflow_run.head_sha, &prev_run.head_sha)? else {
         return Ok(StatusCode::OK);
