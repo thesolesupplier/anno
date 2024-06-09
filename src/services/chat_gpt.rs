@@ -18,8 +18,9 @@ pub async fn get_diff_summary(diff: &str) -> Result<String> {
         Prompt:
             I need you to analyze a git code diff to identify and summarize the user-facing features that have been released.
             Avoid describing each individual code change. Instead, focus on understanding the broader context of the changes and how they translate into new features or improvements for end-users.
-            Additionally, list any dependency changes that were made and specify any feature flags connected to these features, along with the environments they are enabled in.
-            Additionally, DO NOT list the feature flags under their own separate heading. Instead, include them in the relevant feature descriptions.
+            Additionally, and specify any feature flags connected to these features, along with the environments they are enabled in.
+            DO NOT list the feature flags under their own separate heading. Instead, include them in the relevant feature descriptions.
+            Additionally, list any dependency changes that were made in the package.json file.
             Please ensure that you DO NOT include headings in your summary if there are no changes related to them.
         Steps:
             Analyze the Diff: Examine the git code diff to understand the changes in the codebase.
@@ -45,7 +46,6 @@ pub async fn get_diff_summary(diff: &str) -> Result<String> {
             *Dependency Changes*:
                 Updated Library `XYZ` to version 1.3.0.
                 Added library `ABC` version 2.1.0.
-        Please perform this analysis on the provided git code diff and deliver a summary as described above.
         ----
         Diff: {diff}
     ");
