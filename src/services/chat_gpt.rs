@@ -7,7 +7,9 @@ pub async fn get_diff_summary(diff: &str) -> Result<String> {
     let chat_gpt = ChatGPT::new_with_config(
         openai_api_key,
         ModelConfigurationBuilder::default()
-            .temperature(1.0)
+            .temperature(0.2)
+            .top_p(0.1)
+            .frequency_penalty(2.0)
             .build()
             .unwrap(),
     )?;
@@ -44,7 +46,6 @@ pub async fn get_diff_summary(diff: &str) -> Result<String> {
                 Updated Library `XYZ` to version 1.3.0.
                 Added library `ABC` version 2.1.0.
         Please perform this analysis on the provided git code diff and deliver a summary as described above.
-        Only include the headings above and DO NOT add any additional ones.
         ----
         Diff: {diff}
     ");
