@@ -10,6 +10,10 @@ pub struct Workflow {
 }
 
 impl Workflow {
+    pub fn is_pipeline_run(&self) -> bool {
+        self.workflow_run.name == "Pipeline"
+    }
+
     pub fn is_successful_run(&self) -> bool {
         self.action == "completed" && self.workflow_run.conclusion == "success"
     }
@@ -30,6 +34,7 @@ impl Workflow {
             .query(&[
                 ("status", "success"),
                 ("branch", "master"),
+                ("event", "push"),
                 ("created", &format!("<{}", self.workflow_run.created_at)),
             ])
             .send()

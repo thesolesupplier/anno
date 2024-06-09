@@ -6,7 +6,7 @@ use crate::{
 use hyper::StatusCode;
 
 pub async fn post(GithubEvent(workflow): GithubEvent<Workflow>) -> Result<StatusCode, AppError> {
-    if !workflow.is_successful_run() {
+    if !workflow.is_pipeline_run() || !workflow.is_successful_run() {
         return Ok(StatusCode::OK);
     }
 
