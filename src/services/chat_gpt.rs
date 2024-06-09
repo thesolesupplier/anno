@@ -27,29 +27,24 @@ pub async fn get_diff_summary(diff: &str) -> Result<String> {
             Identify Feature Flags: Determine which features are controlled by feature flags and specify the environments (e.g., development, staging, production) in which these flags are enabled.
             Exclude Unchanged Sections: Only include headings for New Features, Improvements, Bug Fixes, and Dependency Changes if there are relevant updates.
         Example Output:
-            New Features:
+            *New Features*:
                 Enhanced Search Functionality: Users can now filter search results by date and relevance.
-                    Feature Flag: enhanced_search
+                    Feature Flag: `enhanced_search`
                     Enabled in: QA, Staging
                 Profile Customization: Users have new options to customize their profiles, including uploading a profile picture and adding a bio.
-                    Feature Flag: profile_customization
+                    Feature Flag: `profile_customization`
                     Enabled in: QA, Staging, Prod
-            Improvements:
+            *Improvements*:
                 Faster Load Times: Various optimizations have been made to improve the overall speed of the application.
-                    Feature Flag: Not applicable (N/A)
                 Improved Mobile Experience: The mobile version of the site has been revamped.
-                    Feature Flag: mobile_experience_improvements
-                    Enabled in: Staging
-            Bug Fixes:
+            *Bug Fixes*:
                 Fixed Login Issue: Resolved an issue where some users were unable to log in due to a server error.
-                    Feature Flag: N/A
                 Corrected Display Errors: Addressed several minor display errors on the dashboard.
-                    Feature Flag: N/A
-            Dependency Changes:
-                Updated Library XYZ to version 1.3.0.
-                Added library ABC version 2.1.0.
+            *Dependency Changes*:
+                Updated Library `XYZ` to version 1.3.0.
+                Added library `ABC` version 2.1.0.
         Please perform this analysis on the provided git code diff and deliver a summary as described above.
-        Only include the headings above and DO NOT add any additional ones
+        Only include the headings above and DO NOT add any additional ones.
         ----
         Diff: {diff}
     ");
