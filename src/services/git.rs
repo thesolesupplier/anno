@@ -63,6 +63,10 @@ impl Git {
             true
         })?;
 
+        if diff_text.chars().count() == 0 {
+            return Ok(None);
+        }
+
         Ok(Some(diff_text))
     }
 }
