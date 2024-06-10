@@ -15,7 +15,12 @@ impl Workflow {
     }
 
     pub fn is_successful_run(&self) -> bool {
-        self.action == "completed" && self.workflow_run.conclusion == "success"
+        self.action == "completed"
+            && self
+                .workflow_run
+                .conclusion
+                .as_ref()
+                .is_some_and(|c| c == "success")
     }
 
     pub async fn get_prev_successful_run(&self) -> Result<Option<WorkflowRun>, AppError> {
@@ -70,7 +75,7 @@ pub struct WorkflowRun {
     pub name: String,
     pub head_sha: String,
     pub created_at: String,
-    pub conclusion: String,
+    pub conclusion: Option<String>,
     pub html_url: String,
 }
 
