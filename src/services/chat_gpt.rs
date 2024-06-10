@@ -46,6 +46,7 @@ pub async fn get_diff_summary(diff: &str) -> Result<String> {
             *Dependency Changes*:
                 Updated Library `XYZ` to version 1.3.0.
                 Added library `ABC` version 2.1.0.
+        Please perform this analysis on the provided git code diff and deliver a summary as described above.
         ----
         Diff: {diff}
     ");
