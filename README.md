@@ -20,8 +20,15 @@ The server should now be running at `http://localhost:3000`.
 
 ## **Deployment**
 
-The app is deployed to AWS as a Lambda using the `cargo-lambda` crate. The commands to do so locally have been aliased in the `Makefile`:
+The app is deployed to AWS as a Lambda using the `cargo-lambda` crate. The commands to do so locally have been aliased in the `Makefile`.
 
+To build and deploy the app in a single command, run:
+
+```bash
+make release
+```
+
+Alternatively, you can build and deploy the app separately:
 1. Build:
 
     ```bash

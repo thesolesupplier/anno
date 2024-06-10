@@ -6,3 +6,5 @@ build:
 
 deploy:
 	cargo lambda deploy --enable-function-url
+
+release: build deploy
