@@ -1,5 +1,5 @@
 use anyhow::Result;
-use git2::{DiffFormat, Repository};
+use git2::{DiffFormat, DiffLine, Repository};
 use std::{env, str};
 
 use super::github::Workflow;
@@ -54,7 +54,7 @@ impl Git {
             let path = delta.old_file().path().unwrap().to_str().unwrap();
 
             if !path.contains("package-lock.json") {
-                let change_symbol = line.origin();
+                let change_symbol = get_change_symbol(&line);
                 let content = str::from_utf8(line.content()).unwrap();
 
                 diff_text.push_str(&format!("{change_symbol}{content}"));
@@ -68,5 +68,12 @@ impl Git {
         }
 
         Ok(Some(diff_text))
+    }
+}
+
+fn get_change_symbol(line: &DiffLine) -> String {
+    match line.origin() {
+        '+' | '-' | ' ' => format!("{} ", line.origin()),
+        _ => String::new(),
     }
 }
