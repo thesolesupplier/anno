@@ -8,8 +8,6 @@ use regex_lite::Regex;
 use std::{env, sync::OnceLock};
 
 pub async fn post(GithubEvent(workflow): GithubEvent<Workflow>) -> Result<StatusCode, AppError> {
-    let send_slack_msg = env::var("SLACK_MESSAGE_ENABLED").is_ok_and(|v| v == "true");
-
     if !workflow.is_pipeline_run() || !workflow.is_successful_run() {
         return Ok(StatusCode::OK);
     }
@@ -32,13 +30,7 @@ pub async fn post(GithubEvent(workflow): GithubEvent<Workflow>) -> Result<Status
 
     let summary = get_chat_gpt_summary(&diff, &commit_msgs).await;
 
-    if send_slack_msg {
-        slack::post_release_message(&summary, jira_ticket_links, &workflow, &prev_run).await?;
-    } else {
-        println!("------ SUMMARY ------");
-        println!("{summary}");
-        println!("------ END SUMMARY ------");
-    }
+    slack::post_release_message(&summary, jira_ticket_links, &workflow, &prev_run).await?;
 
     Ok(StatusCode::OK)
 }

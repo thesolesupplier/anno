@@ -28,6 +28,14 @@ pub async fn post_release_message(
     prev_run: &WorkflowRun,
 ) -> Result<(), AppError> {
     let url = env::var("SLACK_WEBHOOK_URL").expect("SLACK_WEBHOOK_URL should be set");
+    let send_slack_msg = env::var("SLACK_MESSAGE_ENABLED").is_ok_and(|v| v == "true");
+
+    if !send_slack_msg {
+        println!("------ SLACK MESSAGE ------");
+        println!("{message}");
+        println!("------ END SLACK MESSAGE ------");
+        return Ok(());
+    }
 
     let run_url = workflow.get_run_url();
     let compare_url = workflow.get_diff_url(&prev_run.head_sha);
