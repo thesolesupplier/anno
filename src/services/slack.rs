@@ -69,7 +69,7 @@ pub async fn post_release_message(
                             "elements": [
                                 {
                                     "type": "text",
-                                    "text": "Jira Tickets:\n",
+                                    "text": "Jira tickets:\n",
                                     "style": {
                                         "bold": true
                                     }
