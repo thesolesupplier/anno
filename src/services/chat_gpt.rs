@@ -1,7 +1,7 @@
 use chatgpt::prelude::*;
 use std::env;
 
-pub async fn get_diff_summary(diff: &str) -> Result<String> {
+pub async fn summarise_diff(diff: &str) -> Result<String> {
     let openai_api_key = env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY should be set");
 
     let chat_gpt = ChatGPT::new_with_config(

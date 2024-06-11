@@ -4,8 +4,11 @@ use crate::{
     utils::error::AppError,
 };
 use hyper::StatusCode;
+use std::env;
 
 pub async fn post(GithubEvent(workflow): GithubEvent<Workflow>) -> Result<StatusCode, AppError> {
+    let send_slack_msg = env::var("SLACK_MESSAGE_ENABLED").is_ok_and(|e| e == "true");
+
     if !workflow.is_pipeline_run() || !workflow.is_successful_run() {
         return Ok(StatusCode::OK);
     }
@@ -14,19 +17,22 @@ pub async fn post(GithubEvent(workflow): GithubEvent<Workflow>) -> Result<Status
         return Ok(StatusCode::OK);
     };
 
-    let repo = Git::init(&workflow)?;
+    let new_commit = &workflow.workflow_run.head_sha;
+    let old_commit = &prev_run.head_sha;
 
-    let Some(diff) = repo.diff(&workflow.workflow_run.head_sha, &prev_run.head_sha)? else {
+    let Some(diff) = Git::init(&workflow)?.diff(new_commit, old_commit)? else {
         return Ok(StatusCode::OK);
     };
 
-    let summary = chat_gpt::get_diff_summary(&diff).await?;
+    let summary = chat_gpt::summarise_diff(&diff).await?;
 
-    println!("------ SUMMARY ------");
-    println!("{summary}");
-    println!("------ END SUMMARY ------");
-
-    slack::post_release_message(&summary, &workflow, &prev_run).await?;
+    if send_slack_msg {
+        slack::post_release_message(&summary, &workflow, &prev_run).await?;
+    } else {
+        println!("------ SUMMARY ------");
+        println!("{summary}");
+        println!("------ END SUMMARY ------");
+    }
 
     Ok(StatusCode::OK)
 }
