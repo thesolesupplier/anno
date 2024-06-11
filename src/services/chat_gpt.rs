@@ -1,7 +1,7 @@
 use chatgpt::prelude::*;
 use std::env;
 
-pub async fn summarise_release(diff: &str, commit_messages: Vec<String>) -> Result<String> {
+pub async fn summarise_release(diff: &str, commit_messages: &Vec<String>) -> Result<String> {
     let openai_api_key = env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY should be set");
 
     let chat_gpt = ChatGPT::new_with_config(
@@ -14,7 +14,7 @@ pub async fn summarise_release(diff: &str, commit_messages: Vec<String>) -> Resu
             .unwrap(),
     )?;
 
-    let joined_messages = commit_messages.join("\n");
+    let commit_messages = commit_messages.join("\n");
 
     let message = format!("
         Prompt:
@@ -51,7 +51,7 @@ pub async fn summarise_release(diff: &str, commit_messages: Vec<String>) -> Resu
         ----
         Diff: {diff}
         ----
-        Commit Messages: {joined_messages}
+        Commit Messages: {commit_messages}
     ");
 
     let response = chat_gpt

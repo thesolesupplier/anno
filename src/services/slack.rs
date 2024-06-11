@@ -1,11 +1,29 @@
-use serde_json::json;
-
 use super::github::{Workflow, WorkflowRun};
 use crate::utils::error::AppError;
+use serde_json::{json, Value};
 use std::env;
+
+fn format_jira_links(jira_links: Vec<String>) -> Vec<Value> {
+    jira_links
+        .iter()
+        .map(|link| {
+            json!({
+                "type": "rich_text_section",
+                "elements": [
+                    {
+                        "type": "link",
+                        "text": link,
+                        "url": link
+                    }
+                ]
+            })
+        })
+        .collect::<Vec<_>>()
+}
 
 pub async fn post_release_message(
     message: &str,
+    jira_links: Vec<String>,
     workflow: &Workflow,
     prev_run: &WorkflowRun,
 ) -> Result<(), AppError> {
@@ -39,6 +57,31 @@ pub async fn post_release_message(
                         "type": "mrkdwn",
                         "text": message
                     }
+                },
+                {
+                    "type": "divider"
+                },
+                {
+                    "type": "rich_text",
+                    "elements": [
+                        {
+                            "type": "rich_text_section",
+                            "elements": [
+                                {
+                                    "type": "text",
+                                    "text": "Jira Tickets:\n",
+                                    "style": {
+                                        "bold": true
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "rich_text_list",
+                            "style": "bullet",
+                            "elements": format_jira_links(jira_links)
+                        }
+                    ]
                 },
                 {
                     "type": "actions",
