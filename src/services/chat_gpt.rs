@@ -1,7 +1,7 @@
 use chatgpt::prelude::*;
 use std::env;
 
-pub async fn summarise_diff(diff: &str) -> Result<String> {
+pub async fn summarise_release(diff: &str, commit_messages: Vec<String>) -> Result<String> {
     let openai_api_key = env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY should be set");
 
     let chat_gpt = ChatGPT::new_with_config(
@@ -14,10 +14,12 @@ pub async fn summarise_diff(diff: &str) -> Result<String> {
             .unwrap(),
     )?;
 
+    let joined_messages = commit_messages.join("\n");
+
     let message = format!("
         Prompt:
-            Your role is to analyze a git code diff to identify and summarize the user-facing features that have been released.
-            Avoid describing each individual code change. Instead, focus on understanding the broader context of the changes and how they translate into new features.
+            Your role is to analyze a git code diff and commit messages to identify and summarize the user-facing features that have been released.
+            Avoid describing each individual code change. Instead, focus on understanding the broader context of the changes and what features they translate into.
             Additionally, specify any feature flags connected to these features, if any, along with the environments they are enabled in.
             DO NOT list the feature flags under their own separate heading. Instead, include them in the relevant feature descriptions.
             Additionally, list any dependency changes that were made in the package.json file only.
@@ -48,6 +50,8 @@ pub async fn summarise_diff(diff: &str) -> Result<String> {
         If the diff is small, i.e. a few lines, then you can be very specific about the change, e.g. \"Updated the color of the button from red to blue.\"
         ----
         Diff: {diff}
+        ----
+        Commit Messages: {joined_messages}
     ");
 
     let response = chat_gpt

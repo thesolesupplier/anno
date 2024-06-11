@@ -69,6 +69,23 @@ impl Git {
 
         Ok(Some(diff_text))
     }
+
+    pub fn get_commit_messages_between(&self, commit1: &str, commit2: &str) -> Result<Vec<String>> {
+        let mut revwalk = self.repo.revwalk()?;
+
+        revwalk.set_sorting(git2::Sort::TIME)?;
+
+        let commit_range = format!("{commit1}..{commit2}");
+        revwalk.push_range(&commit_range)?;
+
+        let mut messages = Vec::new();
+        for oid in revwalk {
+            let commit = self.repo.find_commit(oid?)?;
+            messages.push(commit.message().unwrap_or_default().to_string());
+        }
+
+        Ok(messages)
+    }
 }
 
 fn get_change_symbol(line: &DiffLine) -> String {
