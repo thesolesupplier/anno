@@ -18,7 +18,7 @@ impl Git {
             "https://{user_name}:{token}@github.com/{}",
             workflow.repository.full_name
         );
-        let formatted_repo_name = workflow.repository.name.replace("-", "_");
+        let formatted_repo_name = workflow.repository.name.replace('-', "_");
         let repo_path = format!("{repos_dir}/{formatted_repo_name}");
 
         let repo = match Repository::open(&repo_path) {

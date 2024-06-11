@@ -1,7 +1,7 @@
 use chatgpt::prelude::*;
 use std::env;
 
-pub async fn summarise_release(diff: &str, commit_messages: &Vec<String>) -> Result<String> {
+pub async fn summarise_release(diff: &str, commit_messages: &[String]) -> Result<String> {
     let openai_api_key = env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY should be set");
 
     let chat_gpt = ChatGPT::new_with_config(

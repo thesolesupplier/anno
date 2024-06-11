@@ -9,7 +9,7 @@ use std::{env, sync::OnceLock};
 
 static JIRA_TICKET_REGEX: OnceLock<Regex> = OnceLock::new();
 
-fn get_jira_ticket_links(commit_messages: &Vec<String>) -> Vec<String> {
+fn get_jira_ticket_links(commit_messages: &[String]) -> Vec<String> {
     let jira_base_url = env::var("JIRA_BASE_URL").expect("JIRA_BASE_URL should be set");
 
     let regex = JIRA_TICKET_REGEX.get_or_init(|| Regex::new(r"TFW-\d+").unwrap());

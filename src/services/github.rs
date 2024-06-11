@@ -65,7 +65,7 @@ impl Workflow {
         )
     }
 
-    pub fn get_run_url<'a>(&'a self) -> &'a String {
+    pub fn get_run_url(&self) -> &String {
         &self.workflow_run.html_url
     }
 }
