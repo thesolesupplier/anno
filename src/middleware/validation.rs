@@ -20,9 +20,9 @@ where
     type Rejection = (StatusCode, String);
 
     async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
-        let validate = env::var("WEBHOOK_VALIDATION").expect("WEBHOOK_VALIDATION should be set");
+        let validate = env::var("WEBHOOK_VALIDATION").is_ok_and(|v| v == "true");
 
-        if validate != "true" {
+        if !validate {
             let body = read_body_as_bytes(req, state).await?;
             let value = deseralise_body(body)?;
 

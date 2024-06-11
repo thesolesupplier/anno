@@ -7,28 +7,8 @@ use hyper::StatusCode;
 use regex_lite::Regex;
 use std::{env, sync::OnceLock};
 
-static JIRA_TICKET_REGEX: OnceLock<Regex> = OnceLock::new();
-
-fn get_jira_ticket_links(commit_messages: &[String]) -> Vec<String> {
-    let jira_base_url = env::var("JIRA_BASE_URL").expect("JIRA_BASE_URL should be set");
-
-    let regex = JIRA_TICKET_REGEX.get_or_init(|| Regex::new(r"TFW-\d+").unwrap());
-
-    let ticket_links = commit_messages
-        .iter()
-        .filter_map(|msg| {
-            regex.find(msg).map(|t| {
-                let ticket = t.as_str();
-                format!("{jira_base_url}/{ticket}")
-            })
-        })
-        .collect();
-
-    ticket_links
-}
-
 pub async fn post(GithubEvent(workflow): GithubEvent<Workflow>) -> Result<StatusCode, AppError> {
-    let send_slack_msg = env::var("SLACK_MESSAGE_ENABLED").is_ok_and(|e| e == "true");
+    let send_slack_msg = env::var("SLACK_MESSAGE_ENABLED").is_ok_and(|v| v == "true");
 
     if !workflow.is_pipeline_run() || !workflow.is_successful_run() {
         return Ok(StatusCode::OK);
@@ -61,4 +41,24 @@ pub async fn post(GithubEvent(workflow): GithubEvent<Workflow>) -> Result<Status
     }
 
     Ok(StatusCode::OK)
+}
+
+static JIRA_TICKET_REGEX: OnceLock<Regex> = OnceLock::new();
+
+fn get_jira_ticket_links(commit_messages: &[String]) -> Vec<String> {
+    let jira_base_url = env::var("JIRA_BASE_URL").expect("JIRA_BASE_URL should be set");
+
+    let regex = JIRA_TICKET_REGEX.get_or_init(|| Regex::new(r"TFW-\d+").unwrap());
+
+    let ticket_links = commit_messages
+        .iter()
+        .filter_map(|msg| {
+            regex.find(msg).map(|t| {
+                let ticket = t.as_str();
+                format!("{jira_base_url}/{ticket}")
+            })
+        })
+        .collect();
+
+    ticket_links
 }
