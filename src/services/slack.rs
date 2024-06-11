@@ -37,13 +37,6 @@ pub async fn post_release_message(
         return Ok(());
     }
 
-    let run_url = workflow.get_run_url();
-    let compare_url = workflow.get_diff_url(&prev_run.head_sha);
-    let header = format!(
-        "{} release 🚀",
-        uppercase_first_letter(&workflow.repository.name)
-    );
-
     reqwest::Client::new()
         .put(url)
         .json(&json!({
@@ -52,7 +45,10 @@ pub async fn post_release_message(
                     "type": "header",
                     "text": {
                         "type": "plain_text",
-                        "text": header,
+                        "text": format!(
+                            "{} release 🚀",
+                            uppercase_first_letter(&workflow.repository.name)
+                        ),
                         "emoji": true
                     }
                 },
@@ -101,7 +97,7 @@ pub async fn post_release_message(
                                 "text": "View deployment",
                                 "emoji": true
                             },
-                            "url": run_url
+                            "url": workflow.get_run_url()
                         },
                         {
                             "type": "button",
@@ -110,7 +106,7 @@ pub async fn post_release_message(
                                 "text": "View diff",
                                 "emoji": true
                             },
-                            "url": compare_url
+                            "url": workflow.get_diff_url(&prev_run.head_sha)
                         }
                     ]
                 }
