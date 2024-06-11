@@ -30,7 +30,7 @@ pub async fn post(GithubEvent(workflow): GithubEvent<Workflow>) -> Result<Status
     let commit_msgs = repo.get_commit_messages_between(old_commit, new_commit)?;
     let jira_ticket_links = get_jira_ticket_links(&commit_msgs);
 
-    let summary = chat_gpt::summarise_release(&diff, &commit_msgs).await?;
+    let summary = get_chat_gpt_summary(&diff, &commit_msgs).await;
 
     if send_slack_msg {
         slack::post_release_message(&summary, jira_ticket_links, &workflow, &prev_run).await?;
@@ -41,6 +41,13 @@ pub async fn post(GithubEvent(workflow): GithubEvent<Workflow>) -> Result<Status
     }
 
     Ok(StatusCode::OK)
+}
+
+async fn get_chat_gpt_summary(diff: &str, commit_msgs: &[String]) -> String {
+    match chat_gpt::summarise_release(&diff, &commit_msgs).await {
+        Ok(summary) => summary,
+        Err(err) => format!("*⚠️   An OpenAI error occurred, and I was unable to generate a summary:*\n\n ```{err}```"),
+    }
 }
 
 static JIRA_TICKET_REGEX: OnceLock<Regex> = OnceLock::new();
