@@ -18,17 +18,22 @@ For local development, the app is run as a standard [Axum](https://github.com/to
 
 The server should now be running at `http://localhost:3000`.
 
-## **Deployment**
+## **Local Deployment**
 
-The app is deployed to AWS as a Lambda using the `cargo-lambda` crate. The commands to do so locally have been aliased in the `Makefile`.
+The app is deployed to AWS as a Lambda using [cargo-lambda](https://www.cargo-lambda.info/). The commands to do so locally have been aliased in the `Makefile`.
 
-To build and deploy the app in a single command, run:
+### **Steps**
 
-```bash
-make release
-```
+1. Follow the [installation guide](https://www.cargo-lambda.info/guide/installation.html) for `cargo-lambda`.
+2. Create a `.env.prod` file from the `.env.example` file and fill in the missing values.
+3. Build and deploy the app in a single command:
+
+    ```bash
+    make release
+    ```
 
 Alternatively, you can build and deploy the app separately:
+
 1. Build:
 
     ```bash
