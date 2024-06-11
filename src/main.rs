@@ -36,6 +36,7 @@ async fn main() {
         .layer(trace_layer)
         .layer(CompressionLayer::new().gzip(true).deflate(true));
 
+    // If compiled in debug mode, run the app as a regular Axum server.
     #[cfg(debug_assertions)]
     {
         let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();

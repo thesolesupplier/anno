@@ -1,5 +1,5 @@
 dev:
-	cargo watch -x run
+	cargo watch -x run --no-vcs-ignores
 
 build:
 	cargo lambda build --release
