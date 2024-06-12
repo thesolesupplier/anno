@@ -3,31 +3,12 @@ use crate::utils::error::AppError;
 use serde_json::{json, Value};
 use std::env;
 
-fn format_jira_links(jira_links: Vec<String>) -> Vec<Value> {
-    jira_links
-        .iter()
-        .map(|link| {
-            json!({
-                "type": "rich_text_section",
-                "elements": [
-                    {
-                        "type": "link",
-                        "text": link,
-                        "url": link
-                    }
-                ]
-            })
-        })
-        .collect::<Vec<_>>()
-}
-
 pub async fn post_release_message(
     message: &str,
     jira_links: Vec<String>,
     workflow: &Workflow,
     prev_run: &WorkflowRun,
 ) -> Result<(), AppError> {
-    let url = env::var("SLACK_WEBHOOK_URL").expect("SLACK_WEBHOOK_URL should be set");
     let send_slack_msg = env::var("SLACK_MESSAGE_ENABLED").is_ok_and(|v| v == "true");
 
     if !send_slack_msg {
@@ -36,6 +17,8 @@ pub async fn post_release_message(
         println!("------ END SLACK MESSAGE ------");
         return Ok(());
     }
+
+    let url = env::var("SLACK_WEBHOOK_URL").expect("SLACK_WEBHOOK_URL should be set");
 
     reqwest::Client::new()
         .put(url)
@@ -117,6 +100,24 @@ pub async fn post_release_message(
         .error_for_status()?;
 
     Ok(())
+}
+
+fn format_jira_links(jira_links: Vec<String>) -> Vec<Value> {
+    jira_links
+        .iter()
+        .map(|link| {
+            json!({
+                "type": "rich_text_section",
+                "elements": [
+                    {
+                        "type": "link",
+                        "text": link,
+                        "url": link
+                    }
+                ]
+            })
+        })
+        .collect::<Vec<_>>()
 }
 
 fn uppercase_first_letter(s: &str) -> String {

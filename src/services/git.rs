@@ -1,33 +1,27 @@
+use super::github::Repository;
 use anyhow::Result;
-use git2::{DiffFormat, DiffLine, Repository};
+use git2::{DiffFormat, DiffLine};
 use std::{env, str};
 
-use super::github::Workflow;
-
 pub struct Git {
-    repo: Repository,
+    repo: git2::Repository,
 }
 
 impl Git {
-    pub fn init(workflow: &Workflow) -> Result<Self> {
+    pub fn init(repo: &Repository) -> Result<Self> {
         let repos_dir = env::var("REPOS_DIR").expect("REPOS_DIR should be set");
         let user_name = env::var("GITHUB_USERNAME").expect("GITHUB_USERNAME should be set");
         let token = env::var("GITHUB_ACCESS_TOKEN").expect("GITHUB_ACCESS_TOKEN should be set");
 
-        let repo_url = format!(
-            "https://{user_name}:{token}@github.com/{}",
-            workflow.repository.full_name
-        );
-        let formatted_repo_name = workflow.repository.name.replace('-', "_");
-        let repo_path = format!("{repos_dir}/{formatted_repo_name}");
+        let repo_url = format!("https://{user_name}:{token}@github.com/{}", repo.full_name);
+        let repo_disk_path = format!("{repos_dir}/{}", repo.name.replace('-', "_"));
 
-        let repo = match Repository::open(&repo_path) {
+        let repo = match git2::Repository::open(&repo_disk_path) {
             Ok(repo) => {
                 repo.find_remote("origin")?.fetch(&["master"], None, None)?;
-
-                Repository::open(&repo_path)?
+                git2::Repository::open(&repo_disk_path)?
             }
-            Err(_) => Repository::clone(&repo_url, &repo_path)?,
+            Err(_) => git2::Repository::clone(&repo_url, &repo_disk_path)?,
         };
 
         Ok(Self { repo })

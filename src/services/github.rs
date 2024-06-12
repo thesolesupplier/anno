@@ -10,11 +10,15 @@ pub struct Workflow {
 }
 
 impl Workflow {
-    pub fn is_pipeline_run(&self) -> bool {
+    pub fn is_successful_release(&self) -> bool {
+        self.is_pipeline_run() && self.is_successful_run()
+    }
+
+    fn is_pipeline_run(&self) -> bool {
         self.workflow_run.name == "Pipeline"
     }
 
-    pub fn is_successful_run(&self) -> bool {
+    fn is_successful_run(&self) -> bool {
         self.action == "completed"
             && self
                 .workflow_run
@@ -24,7 +28,7 @@ impl Workflow {
     }
 
     pub async fn get_prev_successful_run(&self) -> Result<Option<WorkflowRun>, AppError> {
-        let token = env::var("GITHUB_ACCESS_TOKEN").expect("GITHUB_ACCESS_TOKEN should be set");
+        let gh_token = env::var("GITHUB_ACCESS_TOKEN").expect("GITHUB_ACCESS_TOKEN should be set");
 
         let url = format!(
             "https://api.github.com/repos/{}/actions/runs",
@@ -33,7 +37,7 @@ impl Workflow {
 
         let mut workflow_runs = reqwest::Client::new()
             .get(url)
-            .bearer_auth(token)
+            .bearer_auth(gh_token)
             .header("Accept", "application/json")
             .header("User-Agent", "Anno")
             .query(&[
