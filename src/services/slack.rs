@@ -1,4 +1,4 @@
-use super::github::{Workflow, WorkflowRun};
+use super::github::{WorkflowEvent, WorkflowRun};
 use crate::utils::error::AppError;
 use serde_json::{json, Value};
 use std::env;
@@ -6,7 +6,7 @@ use std::env;
 pub async fn post_release_message(
     message: &str,
     jira_links: Vec<String>,
-    workflow: &Workflow,
+    workflow_event: &WorkflowEvent,
     prev_run: &WorkflowRun,
 ) -> Result<(), AppError> {
     let send_slack_msg = env::var("SLACK_MESSAGE_ENABLED").is_ok_and(|v| v == "true");
@@ -30,7 +30,7 @@ pub async fn post_release_message(
                         "type": "plain_text",
                         "text": format!(
                             "{} release 🚀",
-                            uppercase_first_letter(&workflow.repository.name)
+                            uppercase_first_letter(&workflow_event.repository.name)
                         ),
                         "emoji": true
                     }
@@ -80,7 +80,7 @@ pub async fn post_release_message(
                                 "text": "View deployment",
                                 "emoji": true
                             },
-                            "url": workflow.get_run_url()
+                            "url": workflow_event.get_run_url()
                         },
                         {
                             "type": "button",
@@ -89,7 +89,7 @@ pub async fn post_release_message(
                                 "text": "View diff",
                                 "emoji": true
                             },
-                            "url": workflow.get_diff_url(&prev_run.head_sha)
+                            "url": workflow_event.get_diff_url(&prev_run.head_sha)
                         }
                     ]
                 }

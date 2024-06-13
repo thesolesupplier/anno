@@ -3,13 +3,13 @@ use serde::Deserialize;
 use std::env;
 
 #[derive(Deserialize)]
-pub struct Workflow {
+pub struct WorkflowEvent {
     pub action: String,
     pub repository: Repository,
     pub workflow_run: WorkflowRun,
 }
 
-impl Workflow {
+impl WorkflowEvent {
     pub fn is_successful_release(&self) -> bool {
         self.is_pipeline_run() && self.is_successful_run()
     }
