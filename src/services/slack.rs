@@ -20,81 +20,85 @@ pub async fn post_release_message(
 
     let url = env::var("SLACK_WEBHOOK_URL").expect("SLACK_WEBHOOK_URL should be set");
 
-    reqwest::Client::new()
-        .put(url)
-        .json(&json!({
-            "blocks": [
+    let mut message_blocks: Vec<serde_json::Value> = Vec::from([
+        json!({
+            "type": "header",
+            "text": {
+                "type": "plain_text",
+                "text": format!(
+                    "{} release 🚀",
+                    uppercase_first_letter(&workflow_event.repository.name)
+                ),
+                "emoji": true
+            }
+        }),
+        json!({
+            "type": "divider"
+        }),
+        json!({
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": message
+            }
+        }),
+        json!({
+            "type": "divider"
+        }),
+    ]);
+
+    if !jira_links.is_empty() {
+        message_blocks.push(json!({
+            "type": "rich_text",
+            "elements": [
                 {
-                    "type": "header",
-                    "text": {
-                        "type": "plain_text",
-                        "text": format!(
-                            "{} release 🚀",
-                            uppercase_first_letter(&workflow_event.repository.name)
-                        ),
-                        "emoji": true
-                    }
-                },
-                {
-                    "type": "divider"
-                },
-                {
-                    "type": "section",
-                    "text": {
-                        "type": "mrkdwn",
-                        "text": message
-                    }
-                },
-                {
-                    "type": "divider"
-                },
-                {
-                    "type": "rich_text",
+                    "type": "rich_text_section",
                     "elements": [
                         {
-                            "type": "rich_text_section",
-                            "elements": [
-                                {
-                                    "type": "text",
-                                    "text": "Jira tickets:\n",
-                                    "style": {
-                                        "bold": true
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            "type": "rich_text_list",
-                            "style": "bullet",
-                            "elements": format_jira_links(jira_links)
+                            "type": "text",
+                            "text": "Jira tickets:\n",
+                            "style": {
+                                "bold": true
+                            }
                         }
                     ]
                 },
                 {
-                    "type": "actions",
-                    "elements": [
-                        {
-                            "type": "button",
-                            "text": {
-                                "type": "plain_text",
-                                "text": "View deployment",
-                                "emoji": true
-                            },
-                            "url": workflow_event.get_run_url()
-                        },
-                        {
-                            "type": "button",
-                            "text": {
-                                "type": "plain_text",
-                                "text": "View diff",
-                                "emoji": true
-                            },
-                            "url": workflow_event.get_diff_url(&prev_run.head_sha)
-                        }
-                    ]
+                    "type": "rich_text_list",
+                    "style": "bullet",
+                    "elements": format_jira_links(jira_links)
                 }
             ]
-        }))
+        }));
+    }
+
+    message_blocks.push(json!({
+        "type": "actions",
+        "elements": [
+            {
+                "type": "button",
+                "text": {
+                    "type": "plain_text",
+                    "text": "View deployment",
+                    "emoji": true
+                },
+                "url": workflow_event.get_run_url()
+            },
+            {
+                "type": "button",
+                "text": {
+                    "type": "plain_text",
+                    "text": "View diff",
+                    "emoji": true
+                },
+                "url": workflow_event.get_diff_url(&prev_run.head_sha)
+            }
+        ]
+    }));
+
+    reqwest::Client::new()
+        .put(url)
+        .json(&json!({"blocks": json!(message_blocks)}))
         .send()
         .await?
         .error_for_status()?;
