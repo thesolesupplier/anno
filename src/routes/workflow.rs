@@ -1,11 +1,13 @@
 use crate::{
     middleware::validation::GithubEvent,
-    services::{chat_gpt, github::WorkflowEvent, slack, Git},
+    services::{chat_gpt, github::WorkflowEvent, jira::Issue, slack, Git},
     utils::error::AppError,
 };
+use anyhow::Result;
+use futures::future::try_join_all;
 use hyper::StatusCode;
 use regex_lite::Regex;
-use std::{env, sync::OnceLock};
+use std::sync::OnceLock;
 
 pub async fn post(
     GithubEvent(workflow_event): GithubEvent<WorkflowEvent>,
@@ -28,11 +30,11 @@ pub async fn post(
     };
 
     let commit_messages = repo.get_commit_messages_between(old_commit, new_commit)?;
-    let jira_ticket_links = get_jira_ticket_links(&commit_messages);
+    let jira_issues = get_jira_issues(&commit_messages).await?;
 
     let summary = get_chat_gpt_summary(&diff, &commit_messages).await;
 
-    slack::post_release_message(&summary, jira_ticket_links, &workflow_event, &prev_run).await?;
+    slack::post_release_message(&summary, jira_issues, &workflow_event, &prev_run).await?;
 
     Ok(StatusCode::OK)
 }
@@ -46,19 +48,19 @@ async fn get_chat_gpt_summary(diff: &str, commit_msgs: &[String]) -> String {
 
 static JIRA_TICKET_REGEX: OnceLock<Regex> = OnceLock::new();
 
-fn get_jira_ticket_links(commit_messages: &[String]) -> Vec<String> {
-    let jira_base_url = env::var("JIRA_BASE_URL").expect("JIRA_BASE_URL should be set");
-
+async fn get_jira_issues(commit_messages: &[String]) -> Result<Vec<Issue>> {
     let regex = JIRA_TICKET_REGEX.get_or_init(|| Regex::new(r"TFW-\d+").unwrap());
 
-    let ticket_links = commit_messages
+    let jira_requests: Vec<_> = commit_messages
         .iter()
         .filter_map(|message| {
             regex
                 .find(message)
-                .map(|ticket| format!("{jira_base_url}/{}", ticket.as_str()))
+                .map(|ticket| Issue::get_by_key(ticket.as_str()))
         })
         .collect();
 
-    ticket_links
+    let issues = try_join_all(jira_requests).await?.into_iter().collect();
+
+    Ok(issues)
 }

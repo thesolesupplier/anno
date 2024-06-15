@@ -35,6 +35,7 @@ dependencies = [
  "axum-aws-lambda",
  "chatgpt_rs",
  "dotenv",
+ "futures",
  "git2",
  "hex",
  "hmac-sha256",

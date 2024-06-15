@@ -1,11 +1,14 @@
-use super::github::{WorkflowEvent, WorkflowRun};
+use super::{
+    github::{WorkflowEvent, WorkflowRun},
+    jira::Issue,
+};
 use crate::utils::error::AppError;
 use serde_json::{json, Value};
 use std::env;
 
 pub async fn post_release_message(
     message: &str,
-    jira_links: Vec<String>,
+    jira_issues: Vec<Issue>,
     workflow_event: &WorkflowEvent,
     prev_run: &WorkflowRun,
 ) -> Result<(), AppError> {
@@ -47,7 +50,7 @@ pub async fn post_release_message(
         }),
     ]);
 
-    if !jira_links.is_empty() {
+    if !jira_issues.is_empty() {
         message_blocks.push(json!({
             "type": "rich_text",
             "elements": [
@@ -66,7 +69,7 @@ pub async fn post_release_message(
                 {
                     "type": "rich_text_list",
                     "style": "bullet",
-                    "elements": format_jira_links(jira_links)
+                    "elements": format_jira_links(jira_issues)
                 }
             ]
         }));
@@ -80,7 +83,6 @@ pub async fn post_release_message(
                 "text": {
                     "type": "plain_text",
                     "text": "View deployment",
-                    "emoji": true
                 },
                 "url": workflow_event.get_run_url()
             },
@@ -89,7 +91,6 @@ pub async fn post_release_message(
                 "text": {
                     "type": "plain_text",
                     "text": "View diff",
-                    "emoji": true
                 },
                 "url": workflow_event.get_diff_url(&prev_run.head_sha)
             }
@@ -106,17 +107,20 @@ pub async fn post_release_message(
     Ok(())
 }
 
-fn format_jira_links(jira_links: Vec<String>) -> Vec<Value> {
-    jira_links
+fn format_jira_links(jira_issues: Vec<Issue>) -> Vec<Value> {
+    jira_issues
         .iter()
-        .map(|link| {
+        .map(|issue| {
             json!({
                 "type": "rich_text_section",
                 "elements": [
                     {
                         "type": "link",
-                        "text": link,
-                        "url": link
+                        "text": format!("{} {}", issue.key, issue.fields.summary),
+                        "url": issue.get_browse_url(),
+                        "style": {
+                            "bold": true
+                        }
                     }
                 ]
             })
