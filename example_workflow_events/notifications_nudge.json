@@ -1,0 +1,14 @@
+{
+  "action": "completed",
+  "workflow_run": {
+    "name": "Pipeline",
+    "head_sha": "abb6b384a41a474d15dd78fa4f8507467fe33bb8",
+    "conclusion": "success",
+    "html_url": "https://github.com/The-Sole-Supplier/bolt/actions/runs/9414655232",
+    "created_at": "2024-06-07T09:16:26Z"
+  },
+  "repository": {
+    "name": "bolt",
+    "full_name": "The-Sole-Supplier/bolt"
+  }
+}
