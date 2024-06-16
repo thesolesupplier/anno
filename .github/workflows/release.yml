@@ -36,3 +36,16 @@ jobs:
           AWS_DEFAULT_REGION: eu-west-1
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+          CLAUDE_BASE_URL: https://api.anthropic.com
+          GITHUB_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+          GITHUB_SECRET: ${{ secrets.GH_SECRET }}
+          GITHUB_USERNAME: constantincerdan@gmail.com
+          JIRA_API_KEY: ${{ secrets.JIRA_API_KEY }}
+          JIRA_BASE_URL: https://thesolesupplier.atlassian.net
+          LLM_PROVIDER: anthropic
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          REPOS_DIR: '/tmp/repos'
+          SLACK_MESSAGE_ENABLED: true
+          SLACK_WEBHOOK_URL: https://hooks.slack.com/services/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
+          WEBHOOK_VALIDATION: true
