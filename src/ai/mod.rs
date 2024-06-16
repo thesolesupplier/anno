@@ -9,11 +9,9 @@ pub async fn summarise_release(diff: &str, commit_messages: &[String]) -> Result
 
     match llm_provider.as_str() {
         "openai" => get_chat_gpt_summary(diff, commit_messages).await,
-        "anthropic" | _ => {
-            if llm_provider != "anthropic" {
-                tracing::warn!("Unknown LLM provider '{llm_provider}', defaulting to Anthropic.");
-            }
-
+        "anthropic" => get_claude_summary(diff, commit_messages).await,
+        _ => {
+            tracing::warn!("Unknown LLM provider '{llm_provider}', defaulting to Anthropic.");
             get_claude_summary(diff, commit_messages).await
         }
     }
