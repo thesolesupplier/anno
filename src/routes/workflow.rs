@@ -1,6 +1,6 @@
 use crate::{
     middleware::validation::GithubEvent,
-    services::{chat_gpt, github::WorkflowEvent, jira::Issue, slack, Git},
+    services::{ai, github::WorkflowEvent, jira::Issue, slack, Git},
     utils::error::AppError,
 };
 use anyhow::Result;
@@ -32,18 +32,11 @@ pub async fn post(
     let commit_messages = repo.get_commit_messages_between(old_commit, new_commit)?;
     let jira_issues = get_jira_issues(&commit_messages).await?;
 
-    let summary = get_chat_gpt_summary(&diff, &commit_messages).await;
+    let summary = ai::summarise_release(&diff, &commit_messages).await?;
 
     slack::post_release_message(&summary, jira_issues, &workflow_event, &prev_run).await?;
 
     Ok(StatusCode::OK)
-}
-
-async fn get_chat_gpt_summary(diff: &str, commit_msgs: &[String]) -> String {
-    match chat_gpt::summarise_release(diff, commit_msgs).await {
-        Ok(summary) => summary,
-        Err(err) => format!("*⚠️   An OpenAI error occurred, and I was unable to generate a summary:*\n\n ```{err}```"),
-    }
 }
 
 static JIRA_TICKET_REGEX: OnceLock<Regex> = OnceLock::new();
