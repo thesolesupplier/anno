@@ -18,6 +18,7 @@ pub async fn summarise_release(diff: &str, commit_messages: &[String]) -> Result
         .json(&json!({
             "model": "claude-3-opus-20240229",
             "max_tokens": 1024,
+            "temperature": 0.0,
             "system": format!("Prompt:{RELEASE_SUMMARY_PROMPT}"),
             "messages": [{
                 "role": "user",
