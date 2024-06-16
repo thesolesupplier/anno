@@ -8,7 +8,7 @@ use anyhow::Result;
 use futures::future::try_join_all;
 use hyper::StatusCode;
 use regex_lite::Regex;
-use std::sync::OnceLock;
+use std::{collections::HashSet, sync::OnceLock};
 
 pub async fn post(
     GithubEvent(workflow_event): GithubEvent<WorkflowEvent>,
@@ -43,15 +43,14 @@ pub async fn post(
 static JIRA_TICKET_REGEX: OnceLock<Regex> = OnceLock::new();
 
 async fn get_jira_issues(commit_messages: &[String]) -> Result<Vec<Issue>> {
-    let regex = JIRA_TICKET_REGEX.get_or_init(|| Regex::new(r"TFW-\d+").unwrap());
+    let issue_key_regex = JIRA_TICKET_REGEX.get_or_init(|| Regex::new(r"TFW-\d+").unwrap());
 
     let jira_requests: Vec<_> = commit_messages
         .iter()
-        .filter_map(|message| {
-            regex
-                .find(message)
-                .map(|ticket| Issue::get_by_key(ticket.as_str()))
-        })
+        .filter_map(|m| issue_key_regex.find(m).map(|i| i.as_str()))
+        .collect::<HashSet<&str>>()
+        .into_iter()
+        .map(Issue::get_by_key)
         .collect();
 
     let issues = try_join_all(jira_requests).await?.into_iter().collect();
