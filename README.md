@@ -20,7 +20,7 @@ The server should now be running at `http://localhost:3000`.
 
 ### **LLM Config**
 
-Anno can be configured to use either ChatGPT or Claude for summarisation. This is controlled by the `LLM_PROVIDER` environment variable, which can be set to `openai` (ChatGPT) or `anthropic` (Claude).
+Anno can be configured to use either ChatGPT or Claude for summarisation by setting the `LLM_PROVIDER` environment variable to `openai` (ChatGPT) or `anthropic` (Claude).
 
 
 ## **Local Deployment**
