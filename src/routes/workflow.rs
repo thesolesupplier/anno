@@ -1,6 +1,7 @@
 use crate::{
+    ai,
     middleware::validation::GithubEvent,
-    services::{ai, github::WorkflowEvent, jira::Issue, slack, Git},
+    services::{github::WorkflowEvent, jira::Issue, slack, Git},
     utils::error::AppError,
 };
 use anyhow::Result;
