@@ -10,7 +10,6 @@ pub struct Issue {
 
 impl Issue {
     pub async fn get_by_key(key: &str) -> Result<Self> {
-        println!("key: {}", key);
         let jira_base_url = env::var("JIRA_BASE_URL").expect("JIRA_BASE_URL should be set");
         let jira_api_key = env::var("JIRA_API_KEY").expect("JIRA_API_KEY should be set");
 
