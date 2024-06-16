@@ -8,8 +8,7 @@ pub async fn summarise_release(diff: &str, commit_messages: &[String]) -> Result
     let chat_gpt = ChatGPT::new_with_config(
         openai_api_key,
         ModelConfigurationBuilder::default()
-            .temperature(0.2)
-            .top_p(0.1)
+            .temperature(0.0)
             .frequency_penalty(2.0)
             .build()
             .unwrap(),
