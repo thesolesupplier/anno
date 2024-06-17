@@ -1,6 +1,8 @@
 # **Anno**
 
-Anno is a GitHub deployment annotator that uses AI to summarise code changes released in a deployment. This occurs via the `/workflow` endpoint, which receives deployment events from GitHub. When a successful deployment event is received, Anno retrieves the code changes and commits since the last successful deployment, summarises them using ChatGPT or Claude, and then posts the summary to a Slack channel.
+Anno is a GitHub deployment annotator that uses AI to summarise code changes released in a deployment. 
+
+The entrypoint is the `/workflow` endpoint, which receives deployment events from GitHub. When a successful deployment event is received, Anno retrieves the code changes and commits since the last successful deployment, summarises them using ChatGPT or Claude, and then posts the summary to a Slack channel.
 
 ## **Local Development**
 
