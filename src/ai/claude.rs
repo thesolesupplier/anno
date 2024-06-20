@@ -16,7 +16,7 @@ pub async fn summarise_release(diff: &str, commit_messages: &[String]) -> Result
         .header("anthropic-version", "2023-06-01")
         .header("x-api-key", claude_api_key)
         .json(&json!({
-            "model": "claude-3-opus-20240229",
+            "model": "claude-3-5-sonnet-20240620",
             "max_tokens": 1024,
             "temperature": 0.0,
             "system": format!("Prompt:{RELEASE_SUMMARY_PROMPT}"),
