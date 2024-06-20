@@ -13,11 +13,11 @@ use std::{collections::HashSet, sync::OnceLock};
 pub async fn post(
     GithubEvent(workflow_event): GithubEvent<WorkflowEvent>,
 ) -> Result<StatusCode, AppError> {
-    if !workflow_event.is_successful_release() {
+    if !workflow_event.is_first_successful_release().await? {
         return Ok(StatusCode::OK);
     }
 
-    let Some(prev_run) = workflow_event.get_prev_successful_run().await? else {
+    let Some(prev_run) = workflow_event.get_prev_successful_release().await? else {
         return Ok(StatusCode::OK);
     };
 

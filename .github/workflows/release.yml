@@ -48,6 +48,7 @@ jobs:
           CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
           CLAUDE_BASE_URL: https://api.anthropic.com
           GITHUB_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+          GITHUB_BASE_URL: https://api.github.com
           GITHUB_SECRET: ${{ secrets.GH_SECRET }}
           GITHUB_USERNAME: constantincerdan@gmail.com
           JIRA_API_KEY: ${{ secrets.JIRA_API_KEY }}

@@ -75,7 +75,8 @@ impl Git {
         let mut messages = Vec::new();
         for oid in revwalk {
             let commit = self.repo.find_commit(oid?)?;
-            messages.push(commit.message().unwrap_or_default().to_string());
+            let message = commit.message().unwrap_or_default().to_string();
+            messages.push(message);
         }
 
         Ok(messages)
