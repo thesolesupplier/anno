@@ -1,30 +1,40 @@
 use crate::{
     ai,
     middleware::validation::GithubEvent,
-    services::{github::WorkflowEvent, jira::Issue, slack, Git},
+    services::{
+        github::{WorkflowRun, WorkflowRuns},
+        jira::Issue,
+        slack, Git,
+    },
     utils::error::AppError,
 };
 use anyhow::Result;
 use futures::future::try_join_all;
 use hyper::StatusCode;
 use regex_lite::Regex;
+use serde::Deserialize;
 use std::{collections::HashSet, sync::OnceLock};
 
+#[derive(Deserialize)]
+pub struct WorkflowEvent {
+    pub workflow_run: WorkflowRun,
+}
+
 pub async fn post(
-    GithubEvent(workflow_event): GithubEvent<WorkflowEvent>,
+    GithubEvent(WorkflowEvent { workflow_run }): GithubEvent<WorkflowEvent>,
 ) -> Result<StatusCode, AppError> {
-    if !workflow_event.is_first_successful_release().await? {
+    if !workflow_run.is_on_master() || !workflow_run.is_first_successful_attempt().await? {
         return Ok(StatusCode::OK);
     }
 
-    let Some(prev_run) = workflow_event.get_prev_successful_release().await? else {
+    let Some(prev_run) = WorkflowRuns::get_prev_successful_run(&workflow_run).await? else {
         return Ok(StatusCode::OK);
     };
 
-    let new_commit = &workflow_event.workflow_run.head_sha;
-    let old_commit = &prev_run.head_sha;
+    let repo = Git::init(&workflow_run.repository)?;
 
-    let repo = Git::init(&workflow_event.repository)?;
+    let new_commit = &workflow_run.head_sha;
+    let old_commit = &prev_run.head_sha;
 
     let Some(diff) = repo.diff(new_commit, old_commit)? else {
         return Ok(StatusCode::OK);
@@ -35,7 +45,7 @@ pub async fn post(
 
     let summary = ai::summarise_release(&diff, &commit_messages).await?;
 
-    slack::post_release_message(&summary, jira_issues, &workflow_event, &prev_run).await?;
+    slack::post_release_message(&summary, jira_issues, &workflow_run, &prev_run).await?;
 
     Ok(StatusCode::OK)
 }
