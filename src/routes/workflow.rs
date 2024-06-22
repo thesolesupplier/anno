@@ -21,19 +21,19 @@ pub struct WorkflowEvent {
 }
 
 pub async fn post(
-    GithubEvent(WorkflowEvent { workflow_run }): GithubEvent<WorkflowEvent>,
+    GithubEvent(WorkflowEvent { workflow_run: run }): GithubEvent<WorkflowEvent>,
 ) -> Result<StatusCode, AppError> {
-    if !workflow_run.is_on_master() || !workflow_run.is_first_successful_attempt().await? {
+    if !run.is_on_master() || !run.is_first_successful_attempt().await? {
         return Ok(StatusCode::OK);
     }
 
-    let Some(prev_run) = WorkflowRuns::get_prev_successful_run(&workflow_run).await? else {
+    let Some(prev_run) = WorkflowRuns::get_prev_successful_run(&run).await? else {
         return Ok(StatusCode::OK);
     };
 
-    let repo = Git::init(&workflow_run.repository)?;
+    let repo = Git::init(&run.repository)?;
 
-    let new_commit = &workflow_run.head_sha;
+    let new_commit = &run.head_sha;
     let old_commit = &prev_run.head_sha;
 
     let Some(diff) = repo.diff(new_commit, old_commit)? else {
@@ -45,7 +45,7 @@ pub async fn post(
 
     let summary = ai::summarise_release(&diff, &commit_messages).await?;
 
-    slack::post_release_message(&summary, jira_issues, &workflow_run, &prev_run).await?;
+    slack::post_release_message(&summary, jira_issues, &run, &prev_run).await?;
 
     Ok(StatusCode::OK)
 }

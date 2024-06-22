@@ -87,15 +87,15 @@ impl WorkflowRuns {
     pub async fn get_prev_successful_run(
         run: &WorkflowRun,
     ) -> Result<Option<WorkflowRun>, AppError> {
-        let mut runs = Self::get_prev_runs(run).await?.workflow_runs;
+        let runs = Self::get_prev_runs(run).await?.workflow_runs;
 
-        if runs.is_empty() {
-            return Ok(None);
+        for run in runs {
+            if run.is_successful_attempt() || run.get_prev_successful_attempt().await?.is_some() {
+                return Ok(Some(run));
+            }
         }
 
-        let previous_run = runs.remove(0);
-
-        Ok(Some(previous_run))
+        Ok(None)
     }
 
     async fn get_prev_runs(run: &WorkflowRun) -> Result<Self, AppError> {
@@ -113,7 +113,6 @@ impl WorkflowRuns {
             .header("Accept", "application/json")
             .header("User-Agent", "Anno")
             .query(&[
-                ("status", "success"),
                 ("branch", "master"),
                 ("event", "push"),
                 ("created", &format!("<{}", run.created_at)),
@@ -123,6 +122,8 @@ impl WorkflowRuns {
             .error_for_status()?
             .json::<Self>()
             .await?;
+
+        println!("Num of runs: {:?}", runs.workflow_runs.len());
 
         Ok(runs)
     }
