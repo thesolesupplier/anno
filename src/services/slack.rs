@@ -3,11 +3,22 @@ use crate::utils::error::AppError;
 use serde_json::{json, Value};
 use std::env;
 
+pub struct MessageInput<'a> {
+    pub message: String,
+    pub jira_issues: Vec<Issue>,
+    pub run: &'a WorkflowRun,
+    pub prev_run: &'a WorkflowRun,
+    pub mono_app_name: Option<&'a str>,
+}
+
 pub async fn post_release_message(
-    message: &str,
-    jira_issues: Vec<Issue>,
-    workflow_run: &WorkflowRun,
-    prev_run: &WorkflowRun,
+    MessageInput {
+        message,
+        jira_issues,
+        run: workflow_run,
+        prev_run,
+        mono_app_name,
+    }: MessageInput<'_>,
 ) -> Result<(), AppError> {
     let send_slack_msg = env::var("SLACK_MESSAGE_ENABLED").is_ok_and(|v| v == "true");
 
@@ -20,15 +31,16 @@ pub async fn post_release_message(
 
     let url = env::var("SLACK_WEBHOOK_URL").expect("SLACK_WEBHOOK_URL should be set");
 
+    let app_name = mono_app_name
+        .map(|a| a.to_string())
+        .unwrap_or_else(|| uppercase_first_letter(&workflow_run.repository.name));
+
     let mut message_blocks: Vec<serde_json::Value> = Vec::from([
         json!({
             "type": "header",
             "text": {
                 "type": "plain_text",
-                "text": format!(
-                    "{} release 🚀",
-                    uppercase_first_letter(&workflow_run.repository.name)
-                ),
+                "text": format!("{app_name} release 🚀",),
                 "emoji": true
             }
         }),

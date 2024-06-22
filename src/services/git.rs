@@ -1,6 +1,6 @@
 use super::github::Repository;
 use anyhow::Result;
-use git2::{DiffFormat, DiffLine};
+use git2::{Commit, DiffFormat, DiffLine, Oid};
 use std::{env, str};
 
 pub struct Git {
@@ -10,10 +10,10 @@ pub struct Git {
 impl Git {
     pub fn init(repo: &Repository) -> Result<Self> {
         let repos_dir = env::var("REPOS_DIR").expect("REPOS_DIR should be set");
-        let user_name = env::var("GITHUB_USERNAME").expect("GITHUB_USERNAME should be set");
+        let username = env::var("GITHUB_USERNAME").expect("GITHUB_USERNAME should be set");
         let token = env::var("GITHUB_ACCESS_TOKEN").expect("GITHUB_ACCESS_TOKEN should be set");
 
-        let repo_url = format!("https://{user_name}:{token}@github.com/{}", repo.full_name);
+        let repo_url = format!("https://{username}:{token}@github.com/{}", repo.full_name);
         let repo_disk_path = format!("{repos_dir}/{}", repo.name.replace('-', "_"));
 
         let repo = match git2::Repository::open(&repo_disk_path) {
@@ -27,7 +27,12 @@ impl Git {
         Ok(Self { repo })
     }
 
-    pub fn diff(&self, new_commit_hash: &str, old_commit_hash: &str) -> Result<Option<String>> {
+    pub fn diff(
+        &self,
+        new_commit_hash: &str,
+        old_commit_hash: &str,
+        app_name: Option<&str>,
+    ) -> Result<Option<String>> {
         let new_commit = self.repo.revparse_single(new_commit_hash)?;
         let old_commit = self.repo.revparse_single(old_commit_hash)?;
 
@@ -44,10 +49,12 @@ impl Git {
 
         let mut diff_text = String::new();
 
-        diff.print(DiffFormat::Patch, |delta, _hunk, line| {
+        diff.print(DiffFormat::Patch, |delta, _, line| {
             let path = delta.old_file().path().unwrap().to_str().unwrap();
 
-            if !path.contains("package-lock.json") {
+            if !path.contains("package-lock.json")
+                && app_name.map_or(true, |n| path.contains(&n.to_lowercase()))
+            {
                 let change_symbol = get_change_symbol(&line);
                 let content = str::from_utf8(line.content()).unwrap();
 
@@ -64,22 +71,76 @@ impl Git {
         Ok(Some(diff_text))
     }
 
-    pub fn get_commit_messages_between(&self, commit1: &str, commit2: &str) -> Result<Vec<String>> {
+    pub fn get_commit_messages(
+        &self,
+        start_commit: &str,
+        end_commit: &str,
+        app_name: Option<&str>,
+    ) -> Result<Vec<String>> {
         let mut revwalk = self.repo.revwalk()?;
 
         revwalk.set_sorting(git2::Sort::TIME)?;
-
-        let commit_range = format!("{commit1}..{commit2}");
-        revwalk.push_range(&commit_range)?;
+        revwalk.push_range(&format!("{start_commit}..{end_commit}"))?;
 
         let mut messages = Vec::new();
         for oid in revwalk {
-            let commit = self.repo.find_commit(oid?)?;
-            let message = commit.message().unwrap_or_default().to_string();
-            messages.push(message);
+            if let Some(message) = self.get_commit_message(oid?, app_name)? {
+                messages.push(message);
+            }
         }
 
         Ok(messages)
+    }
+
+    pub fn get_commit_message(
+        &self,
+        commit: Oid,
+        app_name: Option<&str>,
+    ) -> Result<Option<String>> {
+        let commit = self.repo.find_commit(commit)?;
+
+        if let Some(app_name) = app_name {
+            let files_touched = self.get_affected_files(&commit)?;
+
+            if !files_touched
+                .iter()
+                .any(|f| f.contains(&app_name.to_lowercase()))
+            {
+                return Ok(None);
+            }
+        }
+
+        let message = commit.message().unwrap_or_default().to_string();
+
+        Ok(Some(message))
+    }
+
+    pub fn get_affected_files(&self, commit: &Commit) -> Result<Vec<String>> {
+        let tree = commit.tree()?;
+        let parent_tree = commit.parent(0)?.tree()?;
+
+        let diff = self
+            .repo
+            .diff_tree_to_tree(Some(&parent_tree), Some(&tree), None)?;
+
+        let mut file_paths = Vec::new();
+        diff.foreach(
+            &mut |delta, _| {
+                let file_path = delta
+                    .old_file()
+                    .path()
+                    .map(|p| p.to_string_lossy().into_owned());
+
+                file_paths.push(file_path.unwrap());
+
+                true
+            },
+            None,
+            None,
+            None,
+        )?;
+
+        Ok(file_paths)
     }
 }
 

@@ -4,6 +4,7 @@ use std::env;
 
 #[derive(Deserialize)]
 pub struct WorkflowRun {
+    pub name: String,
     pub head_sha: String,
     pub repository: Repository,
     created_at: String,
@@ -16,6 +17,10 @@ pub struct WorkflowRun {
 impl WorkflowRun {
     pub fn is_on_master(&self) -> bool {
         self.head_branch == "master"
+    }
+
+    pub fn get_mono_app_name(&self) -> Option<&str> {
+        self.name.split_whitespace().next()
     }
 
     pub async fn is_first_successful_attempt(&self) -> Result<bool, AppError> {
@@ -56,8 +61,6 @@ impl WorkflowRun {
         let Some(prev_attempt_url) = &self.previous_attempt_url else {
             return Ok(None);
         };
-
-        println!("{prev_attempt_url}");
 
         let workflow_run = reqwest::Client::new()
             .get(prev_attempt_url)
@@ -123,8 +126,6 @@ impl WorkflowRuns {
             .json::<Self>()
             .await?;
 
-        println!("Num of runs: {:?}", runs.workflow_runs.len());
-
         Ok(runs)
     }
 }
@@ -136,10 +137,10 @@ pub struct Repository {
 }
 
 impl Repository {
-    pub fn get_compare_url(&self, before_sha: &str, after_sha: &str) -> String {
+    pub fn get_compare_url(&self, old_sha: &str, new_sha: &str) -> String {
         format!(
             "https://github.com/{}/compare/{}...{}",
-            self.full_name, before_sha, after_sha
+            self.full_name, old_sha, new_sha
         )
     }
 }
