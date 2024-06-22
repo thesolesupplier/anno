@@ -32,9 +32,7 @@ pub async fn post_release_message(
                 "emoji": true
             }
         }),
-        json!({
-            "type": "divider"
-        }),
+        json!({ "type": "divider" }),
         json!({
             "type": "section",
             "text": {
@@ -42,12 +40,10 @@ pub async fn post_release_message(
                 "text": message
             }
         }),
-        json!({
-            "type": "divider"
-        }),
     ]);
 
     if !jira_issues.is_empty() {
+        message_blocks.push(json!({ "type": "divider" }));
         message_blocks.push(json!({
             "type": "rich_text",
             "elements": [
