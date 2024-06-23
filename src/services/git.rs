@@ -3,6 +3,8 @@ use anyhow::Result;
 use git2::{Commit, DiffFormat, DiffLine, Oid};
 use std::{env, str};
 
+static IGNORED_FILES: [&str; 2] = ["package-lock.json", ".github"];
+
 pub struct Git {
     repo: git2::Repository,
 }
@@ -19,7 +21,7 @@ impl Git {
         let repo = match git2::Repository::open(&repo_disk_path) {
             Ok(repo) => {
                 repo.find_remote("origin")?.fetch(&["master"], None, None)?;
-                git2::Repository::open(&repo_disk_path)?
+                repo
             }
             Err(_) => git2::Repository::clone(&repo_url, &repo_disk_path)?,
         };
@@ -52,9 +54,10 @@ impl Git {
         diff.print(DiffFormat::Patch, |delta, _, line| {
             let path = delta.old_file().path().unwrap().to_str().unwrap();
 
-            if !path.contains("package-lock.json")
-                && app_name.map_or(true, |n| path.contains(&n.to_lowercase()))
-            {
+            let is_ignored_file = IGNORED_FILES.iter().any(|f| path.contains(f));
+            let is_in_app_dir = app_name.map_or(true, |n| path.contains(&n.to_lowercase()));
+
+            if !is_ignored_file && is_in_app_dir {
                 let change_symbol = get_change_symbol(&line);
                 let content = str::from_utf8(line.content()).unwrap();
 
@@ -78,9 +81,10 @@ impl Git {
         app_name: Option<&str>,
     ) -> Result<Vec<String>> {
         let mut revwalk = self.repo.revwalk()?;
-
         revwalk.set_sorting(git2::Sort::TIME)?;
-        revwalk.push_range(&format!("{start_commit}..{end_commit}"))?;
+
+        let commit_range = &format!("{start_commit}..{end_commit}");
+        revwalk.push_range(commit_range)?;
 
         let mut messages = Vec::new();
         for oid in revwalk {
@@ -92,19 +96,15 @@ impl Git {
         Ok(messages)
     }
 
-    pub fn get_commit_message(
-        &self,
-        commit: Oid,
-        app_name: Option<&str>,
-    ) -> Result<Option<String>> {
+    fn get_commit_message(&self, commit: Oid, app_name: Option<&str>) -> Result<Option<String>> {
         let commit = self.repo.find_commit(commit)?;
 
         if let Some(app_name) = app_name {
-            let files_touched = self.get_affected_files(&commit)?;
+            let affected_files = self.get_affected_files(&commit)?;
 
-            if !files_touched
+            if !affected_files
                 .iter()
-                .any(|f| f.contains(&app_name.to_lowercase()))
+                .any(|path| path.contains(&app_name.to_lowercase()))
             {
                 return Ok(None);
             }
@@ -115,7 +115,7 @@ impl Git {
         Ok(Some(message))
     }
 
-    pub fn get_affected_files(&self, commit: &Commit) -> Result<Vec<String>> {
+    fn get_affected_files(&self, commit: &Commit) -> Result<Vec<String>> {
         let tree = commit.tree()?;
         let parent_tree = commit.parent(0)?.tree()?;
 

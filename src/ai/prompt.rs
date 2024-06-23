@@ -15,19 +15,19 @@ pub const RELEASE_SUMMARY_PROMPT: &str = "
       Exclude Unchanged Sections: Only include headings for New features, Improvements, Bug fixes, and Dependency changes if there are updates.
   Example Output:
       *New features*:
-          - Users can now filter search results by date and relevance.
+          • Users can now filter search results by date and relevance.
               Feature Flag: `enhanced_search`
               Enabled in: QA, Staging
-          - New customisation options have been added to user profiles, including uploading a profile picture and adding a bio.
+          • New customisation options have been added to user profiles, including uploading a profile picture and adding a bio.
       *Improvements*:
-          - Various optimizations have been made to improve the overall speed of the application.
-          - The mobile version of the site has been revamped.
+          • Various optimizations have been made to improve the overall speed of the application.
+          • The mobile version of the site has been revamped.
       *Bug fixes*:
-          - Resolved an issue where some users were unable to log in due to a server error.
-          - Addressed several minor display errors on the dashboard.
+          • Resolved an issue where some users were unable to log in due to a server error.
+          • Addressed several minor display errors on the dashboard.
       *Dependency changes*:
-          - Updated Library `XYZ` to version 1.3.0.
-          - Added library `ABC` version 2.1.0.
+          • Updated Library `XYZ` to version 1.3.0.
+          • Added library `ABC` version 2.1.0.
   Please perform this analysis on the provided git code diff and deliver a summary as described above based on that diff.
   If the diff is small, i.e. a few lines, then you can be very specific about the change, e.g. \"Updated the color of the button from red to blue.\"
 ";

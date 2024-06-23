@@ -8,7 +8,7 @@ pub struct MessageInput<'a> {
     pub jira_issues: Vec<Issue>,
     pub run: &'a WorkflowRun,
     pub prev_run: &'a WorkflowRun,
-    pub mono_app_name: Option<&'a str>,
+    pub app_name: Option<&'a str>,
 }
 
 pub async fn post_release_message(
@@ -17,7 +17,7 @@ pub async fn post_release_message(
         jira_issues,
         run: workflow_run,
         prev_run,
-        mono_app_name,
+        app_name,
     }: MessageInput<'_>,
 ) -> Result<(), AppError> {
     let send_slack_msg = env::var("SLACK_MESSAGE_ENABLED").is_ok_and(|v| v == "true");
@@ -31,7 +31,7 @@ pub async fn post_release_message(
 
     let url = env::var("SLACK_WEBHOOK_URL").expect("SLACK_WEBHOOK_URL should be set");
 
-    let app_name = mono_app_name
+    let app_name = app_name
         .map(|a| a.to_string())
         .unwrap_or_else(|| uppercase_first_letter(&workflow_run.repository.name));
 

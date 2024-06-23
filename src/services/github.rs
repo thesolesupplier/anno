@@ -23,6 +23,14 @@ impl WorkflowRun {
         self.name.split_whitespace().next()
     }
 
+    pub fn is_successful_attempt(&self) -> bool {
+        self.conclusion.as_ref().is_some_and(|c| c == "success")
+    }
+
+    pub async fn has_successful_attempt(&self) -> Result<bool, AppError> {
+        Ok(self.is_successful_attempt() || self.get_prev_successful_attempt().await?.is_some())
+    }
+
     pub async fn is_first_successful_attempt(&self) -> Result<bool, AppError> {
         if !self.is_successful_attempt() {
             return Ok(false);
@@ -31,10 +39,6 @@ impl WorkflowRun {
         let is_first_successful_attempt = self.get_prev_successful_attempt().await?.is_none();
 
         Ok(is_first_successful_attempt)
-    }
-
-    fn is_successful_attempt(&self) -> bool {
-        self.conclusion.as_ref().is_some_and(|c| c == "success")
     }
 
     async fn get_prev_successful_attempt(&self) -> Result<Option<WorkflowRun>, AppError> {
@@ -90,11 +94,14 @@ impl WorkflowRuns {
     pub async fn get_prev_successful_run(
         run: &WorkflowRun,
     ) -> Result<Option<WorkflowRun>, AppError> {
-        let runs = Self::get_prev_runs(run).await?.workflow_runs;
+        let prev_runs = Self::get_prev_runs(run).await?.workflow_runs;
 
-        for run in runs {
-            if run.is_successful_attempt() || run.get_prev_successful_attempt().await?.is_some() {
-                return Ok(Some(run));
+        for prev_run in prev_runs {
+            if prev_run.name == run.name
+                && prev_run.head_sha != run.head_sha
+                && prev_run.has_successful_attempt().await?
+            {
+                return Ok(Some(prev_run));
             }
         }
 
