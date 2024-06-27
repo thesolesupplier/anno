@@ -8,6 +8,7 @@ pub async fn summarise_release(diff: &str, commit_messages: &[String]) -> Result
     let chat_gpt = ChatGPT::new_with_config(
         openai_api_key,
         ModelConfigurationBuilder::default()
+            .engine(ChatGPTEngine::Custom("gpt-4o"))
             .temperature(0.0)
             .frequency_penalty(2.0)
             .build()
@@ -18,7 +19,9 @@ pub async fn summarise_release(diff: &str, commit_messages: &[String]) -> Result
 
     let response = chat_gpt
         .send_message(format!(
-            "Prompt: {RELEASE_SUMMARY_PROMPT} | Diff: {diff} | Commit Messages: {commit_messages}"
+            "<Prompt>{RELEASE_SUMMARY_PROMPT}</Prompt>
+             <Diff>{diff}</Diff>
+             <Commit Messages>{commit_messages}<Commit Messages>"
         ))
         .await?
         .message()

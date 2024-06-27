@@ -1,20 +1,36 @@
 use anyhow::{Error, Result};
-use std::env;
+use regex_lite::Regex;
+use std::{env, sync::OnceLock};
 mod chat_gpt;
 mod claude;
 mod prompt;
 
+static CHANGES_REGEX: OnceLock<Regex> = OnceLock::new();
+
+fn extract_summary(diff: &str) -> Result<String> {
+    let changes_regex =
+        CHANGES_REGEX.get_or_init(|| Regex::new(r"(?s)<Changes>(.*?)<\/Changes>").unwrap());
+
+    let Some(changes) = changes_regex.captures(diff) else {
+        return Ok("Unable to extract summary from AI response".to_string());
+    };
+
+    Ok(changes.get(1).unwrap().as_str().trim().to_string())
+}
+
 pub async fn summarise_release(diff: &str, commit_messages: &[String]) -> Result<String> {
     let llm_provider = env::var("LLM_PROVIDER").expect("LLM_PROVIDER should be set");
 
-    match llm_provider.as_str() {
+    let ai_response = match llm_provider.as_str() {
         "openai" => get_chat_gpt_summary(diff, commit_messages).await,
         "anthropic" => get_claude_summary(diff, commit_messages).await,
         _ => {
             tracing::warn!("Unknown LLM provider '{llm_provider}', defaulting to Anthropic.");
             get_claude_summary(diff, commit_messages).await
         }
-    }
+    }?;
+
+    extract_summary(&ai_response)
 }
 
 async fn get_claude_summary(diff: &str, commit_messages: &[String]) -> Result<String> {

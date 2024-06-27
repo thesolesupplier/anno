@@ -22,7 +22,10 @@ pub async fn summarise_release(diff: &str, commit_messages: &[String]) -> Result
             "system": format!("Prompt: {RELEASE_SUMMARY_PROMPT}"),
             "messages": [{
                 "role": "user",
-                "content": format!("Diff: {diff}, Commit Messages: {commit_messages}")
+                "content": format!("
+                    <Diff>{diff}</Diff>
+                    <CommitMessages>{commit_messages}</CommitMessages>
+                ")
             }]
         }))
         .send()
