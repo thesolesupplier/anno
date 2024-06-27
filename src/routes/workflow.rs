@@ -4,8 +4,7 @@ use crate::{
     services::{
         github::{WorkflowRun, WorkflowRuns},
         jira::Issue,
-        slack::{self, MessageInput},
-        Git,
+        slack, Git,
     },
     utils::error::AppError,
 };
@@ -59,7 +58,7 @@ impl WorkflowEvent {
 
         let summary = ai::summarise_release(&diff, &commit_messages).await?;
 
-        slack::post_release_message(MessageInput {
+        slack::post_release_message(slack::MessageInput {
             app_name,
             message: summary,
             jira_issues,

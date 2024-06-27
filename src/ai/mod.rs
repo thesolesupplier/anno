@@ -7,15 +7,19 @@ mod prompt;
 
 static CHANGES_REGEX: OnceLock<Regex> = OnceLock::new();
 
-fn extract_summary(diff: &str) -> Result<String> {
-    let changes_regex =
+fn extract_summary(ai_response: String) -> Result<String> {
+    let summary_regex =
         CHANGES_REGEX.get_or_init(|| Regex::new(r"(?s)<Changes>(.*?)<\/Changes>").unwrap());
 
-    let Some(changes) = changes_regex.captures(diff) else {
-        return Ok("Unable to extract summary from AI response".to_string());
+    let Some(matches) = summary_regex.captures(&ai_response) else {
+        return Ok(ai_response);
     };
 
-    Ok(changes.get(1).unwrap().as_str().trim().to_string())
+    if matches.len() == 0 {
+        return Ok(ai_response);
+    }
+
+    Ok(matches.get(1).unwrap().as_str().trim().to_string())
 }
 
 pub async fn summarise_release(diff: &str, commit_messages: &[String]) -> Result<String> {
@@ -30,7 +34,7 @@ pub async fn summarise_release(diff: &str, commit_messages: &[String]) -> Result
         }
     }?;
 
-    extract_summary(&ai_response)
+    extract_summary(ai_response)
 }
 
 async fn get_claude_summary(diff: &str, commit_messages: &[String]) -> Result<String> {
