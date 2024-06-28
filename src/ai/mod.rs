@@ -46,7 +46,7 @@ async fn get_claude_summary(diff: &str, commit_messages: &[String]) -> Result<St
 async fn get_chat_gpt_summary(diff: &str, commit_messages: &[String]) -> Result<String> {
     chat_gpt::summarise_release(diff, commit_messages)
         .await
-        .map_err(|err| get_err("OpenAI", err.into()))
+        .map_err(|err| get_err("OpenAI", err))
 }
 
 fn get_err(provider: &str, err: Error) -> Error {

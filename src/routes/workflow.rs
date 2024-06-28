@@ -38,7 +38,7 @@ impl WorkflowEvent {
             return Ok(StatusCode::OK);
         }
 
-        let Some(prev_run) = WorkflowRuns::get_prev_successful_run(&run).await? else {
+        let Some(prev_run) = WorkflowRuns::get_prev_successful_run(run).await? else {
             return Ok(StatusCode::OK);
         };
 
