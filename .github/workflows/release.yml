@@ -55,6 +55,7 @@ jobs:
           JIRA_BASE_URL: https://thesolesupplier.atlassian.net
           LLM_PROVIDER: anthropic
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_BASE_URL: https://api.openai.com/v1
           REPOS_DIR: '/tmp/repos'
           SLACK_MESSAGE_ENABLED: true
           SLACK_WEBHOOK_URL: https://hooks.slack.com/services/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
