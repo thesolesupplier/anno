@@ -6,8 +6,9 @@ use axum::{
 use hmac_sha256::HMAC;
 use hyper::StatusCode;
 use serde::de::DeserializeOwned;
-use std::env;
 use subtle::ConstantTimeEq;
+
+use crate::utils::config;
 
 pub struct GithubEvent<T>(pub T);
 
@@ -20,7 +21,7 @@ where
     type Rejection = (StatusCode, String);
 
     async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
-        let validate = env::var("WEBHOOK_VALIDATION").is_ok_and(|v| v == "true");
+        let validate = config::get("WEBHOOK_VALIDATION").is_ok_and(|v| v == "true");
 
         if !validate {
             let body = read_body_as_bytes(req, state).await?;
@@ -29,7 +30,7 @@ where
             return Ok(GithubEvent(value));
         }
 
-        let token = env::var("GITHUB_SECRET").expect("GITHUB_SECRET should be set");
+        let token = config::get("GITHUB_SECRET").unwrap();
 
         let signature_sha256 = req
             .headers()

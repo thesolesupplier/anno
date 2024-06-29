@@ -1,7 +1,9 @@
+use crate::utils::config;
+
 use super::github::Repository;
 use anyhow::Result;
 use git2::{Commit, DiffFormat, DiffLine, Oid};
-use std::{env, str};
+use std::str;
 
 static IGNORED_FILES: [&str; 2] = ["package-lock.json", ".github"];
 
@@ -11,9 +13,9 @@ pub struct Git {
 
 impl Git {
     pub fn init(repo: &Repository) -> Result<Self> {
-        let repos_dir = env::var("REPOS_DIR").expect("REPOS_DIR should be set");
-        let username = env::var("GITHUB_USERNAME").expect("GITHUB_USERNAME should be set");
-        let token = env::var("GITHUB_ACCESS_TOKEN").expect("GITHUB_ACCESS_TOKEN should be set");
+        let repos_dir = config::get("REPOS_DIR")?;
+        let username = config::get("GITHUB_USERNAME")?;
+        let token = config::get("GITHUB_ACCESS_TOKEN")?;
 
         let repo_url = format!("https://{username}:{token}@github.com/{}", repo.full_name);
         let repo_disk_path = format!("{repos_dir}/{}", repo.name.replace('-', "_"));

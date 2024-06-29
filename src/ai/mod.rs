@@ -1,6 +1,8 @@
 use anyhow::{Error, Result};
 use regex_lite::Regex;
-use std::{env, sync::OnceLock};
+use std::sync::OnceLock;
+
+use crate::utils::config;
 mod chat_gpt;
 mod claude;
 mod prompt;
@@ -23,7 +25,7 @@ fn extract_summary(ai_response: String) -> Result<String> {
 }
 
 pub async fn summarise_release(diff: &str, commit_messages: &[String]) -> Result<String> {
-    let llm_provider = env::var("LLM_PROVIDER").expect("LLM_PROVIDER should be set");
+    let llm_provider = config::get("LLM_PROVIDER")?;
 
     let ai_response = match llm_provider.as_str() {
         "openai" => get_chat_gpt_summary(diff, commit_messages).await,

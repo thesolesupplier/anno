@@ -1,7 +1,6 @@
 use super::{github::WorkflowRun, jira::Issue};
-use crate::utils::error::AppError;
+use crate::utils::{config, error::AppError};
 use serde_json::{json, Value};
-use std::env;
 
 pub struct MessageInput<'a> {
     pub message: String,
@@ -20,7 +19,7 @@ pub async fn post_release_message(
         app_name,
     }: MessageInput<'_>,
 ) -> Result<(), AppError> {
-    let send_slack_msg = env::var("SLACK_MESSAGE_ENABLED").is_ok_and(|v| v == "true");
+    let send_slack_msg = config::get("SLACK_MESSAGE_ENABLED").is_ok_and(|v| v == "true");
 
     if !send_slack_msg {
         println!("------ SLACK MESSAGE ------");
@@ -29,7 +28,7 @@ pub async fn post_release_message(
         return Ok(());
     }
 
-    let url = env::var("SLACK_WEBHOOK_URL").expect("SLACK_WEBHOOK_URL should be set");
+    let url = config::get("SLACK_WEBHOOK_URL")?;
 
     let app_name = app_name
         .map(|a| a.to_string())

@@ -1,6 +1,5 @@
-use crate::utils::error::AppError;
+use crate::utils::{config, error::AppError};
 use serde::Deserialize;
-use std::env;
 
 #[derive(Deserialize)]
 pub struct WorkflowRun {
@@ -60,7 +59,7 @@ impl WorkflowRun {
     }
 
     async fn get_prev_attempt(&self) -> Result<Option<WorkflowRun>, AppError> {
-        let gh_token = env::var("GITHUB_ACCESS_TOKEN").expect("GITHUB_ACCESS_TOKEN should be set");
+        let gh_token = config::get("GITHUB_ACCESS_TOKEN")?;
 
         let Some(prev_attempt_url) = &self.previous_attempt_url else {
             return Ok(None);
@@ -109,8 +108,8 @@ impl WorkflowRuns {
     }
 
     async fn get_prev_runs(run: &WorkflowRun) -> Result<Self, AppError> {
-        let gh_base_url = env::var("GITHUB_BASE_URL").expect("GITHUB_BASE_URL should be set");
-        let gh_token = env::var("GITHUB_ACCESS_TOKEN").expect("GITHUB_ACCESS_TOKEN should be set");
+        let gh_base_url = config::get("GITHUB_BASE_URL")?;
+        let gh_token = config::get("GITHUB_ACCESS_TOKEN")?;
 
         let url = format!(
             "{}/repos/{}/actions/runs",

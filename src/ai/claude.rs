@@ -1,13 +1,13 @@
 use super::prompt::RELEASE_SUMMARY_PROMPT;
+use crate::utils::config;
 use anyhow::Result;
 use serde::Deserialize;
 use serde_json::json;
-use std::env;
 
 pub async fn summarise_release(diff: &str, commit_messages: &[String]) -> Result<String> {
-    let base_url = env::var("ANTHROPIC_BASE_URL").expect("ANTHROPIC_BASE_URL should be set");
-    let api_key = env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY should be set");
-    let model = env::var("ANTHROPIC_MODEL").expect("ANTHROPIC_MODEL should be set");
+    let base_url = config::get("ANTHROPIC_BASE_URL")?;
+    let api_key = config::get("ANTHROPIC_API_KEY")?;
+    let model = config::get("ANTHROPIC_MODEL")?;
 
     let commit_messages = commit_messages.join("\n");
 

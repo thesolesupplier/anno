@@ -7,13 +7,13 @@ mod utils;
 use axum::body::Body;
 use axum::http::header::{ACCEPT, ACCEPT_ENCODING, AUTHORIZATION, CONTENT_TYPE, ORIGIN};
 use axum::{routing::post, Router};
-use dotenv::dotenv;
 use hyper::Request;
 use tower_http::{compression::CompressionLayer, cors::CorsLayer, trace::TraceLayer};
+use utils::config;
 
 #[tokio::main]
 async fn main() {
-    dotenv().ok();
+    config::load();
 
     tracing_subscriber::fmt()
         .with_ansi(false)
