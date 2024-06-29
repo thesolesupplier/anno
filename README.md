@@ -1,6 +1,6 @@
 # **Anno**
 
-Anno is a GitHub deployment annotator that uses AI to summarise code changes released in a deployment. 
+Anno is a GitHub deployment annotator that uses AI to summarise code changes released in a deployment.
 
 The entrypoint is the `/workflow` endpoint, which receives deployment events from GitHub. When a successful deployment event is received, Anno retrieves the code changes and commits since the last successful deployment, summarises them using ChatGPT or Claude, and then posts the summary to a Slack channel.
 
@@ -22,7 +22,7 @@ The server should now be running at `http://localhost:3000`.
 
 ### **LLM Config**
 
-Anno can be configured to use either ChatGPT or Claude for summarisation by setting the `LLM_PROVIDER` environment variable to `openai` (ChatGPT) or `anthropic` (Claude).
+Anno can be configured to use either ChatGPT or Claude for summarisation by setting the `LLM_PROVIDER` environment variable to `openai` (ChatGPT) or `anthropic` (Claude). Their respective models can then be configured via the `OPENAI_MODEL` and `ANTHROPIC_MODEL` environment variables.
 
 
 ## **Local Deployment**

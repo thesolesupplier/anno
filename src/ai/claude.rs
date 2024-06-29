@@ -5,18 +5,19 @@ use serde_json::json;
 use std::env;
 
 pub async fn summarise_release(diff: &str, commit_messages: &[String]) -> Result<String> {
-    let claude_base_url = env::var("CLAUDE_BASE_URL").expect("CLAUDE_BASE_URL should be set");
-    let claude_api_key = env::var("CLAUDE_API_KEY").expect("CLAUDE_API_KEY should be set");
+    let base_url = env::var("ANTHROPIC_BASE_URL").expect("ANTHROPIC_BASE_URL should be set");
+    let api_key = env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY should be set");
+    let model = env::var("ANTHROPIC_MODEL").expect("ANTHROPIC_MODEL should be set");
 
     let commit_messages = commit_messages.join("\n");
 
     let mut response = reqwest::Client::new()
-        .post(format!("{claude_base_url}/v1/messages"))
+        .post(format!("{base_url}/v1/messages"))
         .header("content-type", "application/json")
         .header("anthropic-version", "2023-06-01")
-        .header("x-api-key", claude_api_key)
+        .header("x-api-key", api_key)
         .json(&json!({
-            "model": "claude-3-opus-20240229",
+            "model": model,
             "max_tokens": 1024,
             "temperature": 0.0,
             "system": format!("Prompt: {RELEASE_SUMMARY_PROMPT}"),
