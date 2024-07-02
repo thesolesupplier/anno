@@ -5,7 +5,7 @@ use anyhow::Result;
 use git2::{Commit, DiffFormat, DiffLine, Oid};
 use std::str;
 
-static IGNORED_FILES: [&str; 2] = ["package-lock.json", ".github"];
+static IGNORED_DIFF_FILES: [&str; 3] = ["package-lock.json", ".github", ".css"];
 
 pub struct Git {
     repo: git2::Repository,
@@ -56,7 +56,7 @@ impl Git {
         diff.print(DiffFormat::Patch, |delta, _, line| {
             let path = delta.old_file().path().unwrap().to_str().unwrap();
 
-            let is_ignored_file = IGNORED_FILES.iter().any(|f| path.contains(f));
+            let is_ignored_file = IGNORED_DIFF_FILES.iter().any(|f| path.contains(f));
             let is_in_app_dir = app_name.map_or(true, |n| path.contains(&n.to_lowercase()));
 
             if !is_ignored_file && is_in_app_dir {
