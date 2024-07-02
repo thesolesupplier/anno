@@ -33,7 +33,6 @@ async fn main() {
 
     let app = Router::new()
         .route("/workflow", post(routes::workflow::post))
-        .route("/workflow/mono", post(routes::workflow::post_mono))
         .layer(cors_layer)
         .layer(trace_layer)
         .layer(CompressionLayer::new().gzip(true).deflate(true));
