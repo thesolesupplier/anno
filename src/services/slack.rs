@@ -3,27 +3,29 @@ use crate::utils::{config, error::AppError};
 use serde_json::{json, Value};
 
 pub struct MessageInput<'a> {
-    pub message: String,
-    pub jira_issues: Vec<Issue>,
-    pub run: &'a WorkflowRun,
-    pub prev_run: &'a WorkflowRun,
     pub app_name: Option<&'a str>,
+    pub jira_issues: Vec<Issue>,
+    pub is_mono_repo: Option<bool>,
+    pub prev_run: &'a WorkflowRun,
+    pub run: &'a WorkflowRun,
+    pub summary: String,
 }
 
 pub async fn post_release_message(
     MessageInput {
-        message,
-        jira_issues,
-        run: workflow_run,
-        prev_run,
         app_name,
+        jira_issues,
+        is_mono_repo,
+        prev_run,
+        run: workflow_run,
+        summary,
     }: MessageInput<'_>,
 ) -> Result<(), AppError> {
     let send_slack_msg = config::get("SLACK_MESSAGE_ENABLED").is_ok_and(|v| v == "true");
 
     if !send_slack_msg {
         println!("------ SLACK MESSAGE ------");
-        println!("{message}");
+        println!("{summary}");
         println!("------ END SLACK MESSAGE ------");
         return Ok(());
     }
@@ -34,24 +36,35 @@ pub async fn post_release_message(
         .map(|a| a.to_string())
         .unwrap_or_else(|| uppercase_first_letter(&workflow_run.repository.name));
 
-    let mut message_blocks: Vec<serde_json::Value> = Vec::from([
-        json!({
-            "type": "header",
-            "text": {
-                "type": "plain_text",
-                "text": format!("{app_name} release 🚀",),
-                "emoji": true
-            }
-        }),
-        json!({ "type": "divider" }),
-        json!({
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": message
-            }
-        }),
-    ]);
+    let mut message_blocks: Vec<serde_json::Value> = Vec::from([json!({
+        "type": "header",
+        "text": {
+            "type": "plain_text",
+            "text": format!("{app_name} release :rocket:",),
+            "emoji": true
+        }
+    })]);
+
+    if is_mono_repo.unwrap_or(false) {
+        message_blocks.push(json!({
+            "type": "context",
+            "elements": [
+                {
+                    "type": "mrkdwn",
+                    "text": format!("*Repo*: {}", workflow_run.repository.name)
+                }
+            ]
+        }));
+    }
+
+    message_blocks.push(json!({ "type": "divider" }));
+    message_blocks.push(json!({
+        "type": "section",
+        "text": {
+            "type": "mrkdwn",
+            "text": summary
+        }
+    }));
 
     if !jira_issues.is_empty() {
         message_blocks.push(json!({ "type": "divider" }));
@@ -97,6 +110,26 @@ pub async fn post_release_message(
                     "text": "View diff",
                 },
                 "url": workflow_run.repository.get_compare_url(&prev_run.head_sha, &workflow_run.head_sha)
+            }
+        ]
+    }));
+
+    message_blocks.push(json!({ "type": "divider" }));
+    message_blocks.push(json!({
+        "type": "context",
+        "elements": [
+            {
+                "type": "mrkdwn",
+                "text": "*Deployed by:*"
+            },
+            {
+                "type": "image",
+                "image_url": workflow_run.actor.avatar_url,
+                "alt_text": "cute cat"
+            },
+            {
+                "type": "mrkdwn",
+                "text": workflow_run.actor.login
             }
         ]
     }));

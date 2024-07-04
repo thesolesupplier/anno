@@ -53,8 +53,9 @@ pub async fn post(
     let summary = ai::summarise_release(&diff, &commit_messages).await?;
 
     slack::post_release_message(slack::MessageInput {
+        is_mono_repo,
         app_name,
-        message: summary,
+        summary,
         jira_issues,
         run: &run,
         prev_run: &prev_run,

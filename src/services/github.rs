@@ -6,6 +6,7 @@ pub struct WorkflowRun {
     pub name: String,
     pub head_sha: String,
     pub repository: Repository,
+    pub actor: Actor,
     created_at: String,
     conclusion: Option<String>,
     head_branch: String,
@@ -82,6 +83,12 @@ impl WorkflowRun {
     pub fn get_run_url(&self) -> &String {
         &self.html_url
     }
+}
+
+#[derive(Deserialize)]
+pub struct Actor {
+    pub login: String,
+    pub avatar_url: String,
 }
 
 #[derive(Deserialize)]
