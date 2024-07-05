@@ -2,7 +2,7 @@ use crate::{
     ai,
     middleware::validation::GithubEvent,
     services::{
-        github::{WorkflowRun, WorkflowRuns},
+        github::{PullRequest, Repository, WorkflowRun, WorkflowRuns},
         jira::Issue,
         slack, Git,
     },
@@ -44,16 +44,18 @@ pub async fn post(
 
     let commit_messages = repo.get_commit_messages(old_commit, new_commit, app_name)?;
     let jira_issues = get_jira_issues(&commit_messages).await?;
+    let pull_requests = get_pull_requests(&run.repository, &commit_messages).await?;
 
     let summary = ai::summarise_release(&diff, &commit_messages).await?;
 
     slack::post_release_message(slack::MessageInput {
-        is_mono_repo,
         app_name,
-        summary,
+        is_mono_repo,
         jira_issues,
-        run: &run,
         prev_run: &prev_run,
+        pull_requests,
+        run: &run,
+        summary,
     })
     .await?;
 
@@ -65,14 +67,19 @@ pub struct WorkflowEvent {
     pub workflow_run: WorkflowRun,
 }
 
-static JIRA_TICKET_REGEX: OnceLock<Regex> = OnceLock::new();
+#[derive(Deserialize)]
+pub struct Config {
+    pub is_mono_repo: Option<bool>,
+}
+
+static JIRA_ISSUE_REGEX: OnceLock<Regex> = OnceLock::new();
 
 async fn get_jira_issues(commit_messages: &[String]) -> Result<Vec<Issue>> {
-    let issue_key_regex = JIRA_TICKET_REGEX.get_or_init(|| Regex::new(r"TFW-\d+").unwrap());
+    let issue_regex = JIRA_ISSUE_REGEX.get_or_init(|| Regex::new(r"TFW-\d+").unwrap());
 
     let jira_requests: Vec<_> = commit_messages
         .iter()
-        .filter_map(|m| issue_key_regex.find(m).map(|i| i.as_str()))
+        .filter_map(|m| issue_regex.find(m).map(|i| i.as_str()))
         .collect::<HashSet<&str>>()
         .into_iter()
         .map(Issue::get_by_key)
@@ -83,7 +90,23 @@ async fn get_jira_issues(commit_messages: &[String]) -> Result<Vec<Issue>> {
     Ok(issues)
 }
 
-#[derive(Deserialize)]
-pub struct Config {
-    pub is_mono_repo: Option<bool>,
+static PR_REGEX: OnceLock<Regex> = OnceLock::new();
+
+async fn get_pull_requests<'a>(
+    repo: &'a Repository,
+    commit_messages: &'a [String],
+) -> Result<Vec<PullRequest>> {
+    let pr_regex = PR_REGEX.get_or_init(|| Regex::new(r"Merge pull request #(\d+)").unwrap());
+
+    let gh_requests: Vec<_> = commit_messages
+        .iter()
+        .filter_map(|m| pr_regex.captures(m).and_then(|c| Some(c.get(1)?.as_str())))
+        .collect::<HashSet<&str>>()
+        .into_iter()
+        .map(|id| repo.get_pull_request(id))
+        .collect();
+
+    let prs = try_join_all(gh_requests).await?.into_iter().collect();
+
+    Ok(prs)
 }

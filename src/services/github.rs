@@ -1,4 +1,5 @@
 use crate::utils::{config, error::AppError};
+use anyhow::Result;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -147,13 +148,40 @@ impl WorkflowRuns {
 pub struct Repository {
     pub full_name: String,
     pub name: String,
+    pulls_url: String,
 }
 
 impl Repository {
+    pub async fn get_pull_request(&self, id: &str) -> Result<PullRequest> {
+        let gh_token = config::get("GITHUB_ACCESS_TOKEN")?;
+
+        let url = self.pulls_url.replace("{/number}", &format!("/{id}"));
+
+        let pr = reqwest::Client::new()
+            .get(url)
+            .bearer_auth(gh_token)
+            .header("Accept", "application/json")
+            .header("User-Agent", "Anno")
+            .send()
+            .await?
+            .error_for_status()?
+            .json::<PullRequest>()
+            .await?;
+
+        Ok(pr)
+    }
+
     pub fn get_compare_url(&self, old_sha: &str, new_sha: &str) -> String {
         format!(
             "https://github.com/{}/compare/{}...{}",
             self.full_name, old_sha, new_sha
         )
     }
+}
+
+#[derive(Deserialize)]
+pub struct PullRequest {
+    pub number: u64,
+    pub title: String,
+    pub html_url: String,
 }

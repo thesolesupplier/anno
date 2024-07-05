@@ -1,10 +1,14 @@
-use super::{github::WorkflowRun, jira::Issue};
+use super::{
+    github::{PullRequest, WorkflowRun},
+    jira::Issue,
+};
 use crate::utils::{config, error::AppError};
 use serde_json::json;
 
 pub struct MessageInput<'a> {
     pub app_name: Option<&'a str>,
     pub jira_issues: Vec<Issue>,
+    pub pull_requests: Vec<PullRequest>,
     pub is_mono_repo: Option<bool>,
     pub prev_run: &'a WorkflowRun,
     pub run: &'a WorkflowRun,
@@ -17,6 +21,7 @@ pub async fn post_release_message(
         jira_issues,
         is_mono_repo,
         prev_run,
+        pull_requests,
         run: workflow_run,
         summary,
     }: MessageInput<'_>,
@@ -42,9 +47,16 @@ pub async fn post_release_message(
     message_blocks.push(json!({ "type": "divider" }));
     message_blocks.push(get_summary_block(&summary));
 
-    if !jira_issues.is_empty() {
+    if !jira_issues.is_empty() || !pull_requests.is_empty() {
         message_blocks.push(json!({ "type": "divider" }));
-        message_blocks.push(get_jira_links_block(jira_issues));
+    }
+
+    if !pull_requests.is_empty() {
+        message_blocks.push(get_pull_requests_block(pull_requests));
+    }
+
+    if !jira_issues.is_empty() {
+        message_blocks.push(get_jira_tickets_block(jira_issues));
     }
 
     message_blocks.push(get_actions_block(workflow_run, prev_run));
@@ -82,7 +94,7 @@ fn get_repo_block(repo_name: &str) -> serde_json::Value {
         "elements": [
             {
                 "type": "mrkdwn",
-                "text": format!("*Repo*: {}", repo_name)
+                "text": format!("*Repo*: {repo_name}")
             }
         ]
     })
@@ -98,7 +110,7 @@ fn get_summary_block(summary: &str) -> serde_json::Value {
     })
 }
 
-fn get_jira_links_block(jira_issues: Vec<Issue>) -> serde_json::Value {
+fn get_pull_requests_block(pull_requests: Vec<PullRequest>) -> serde_json::Value {
     json!({
         "type": "rich_text",
         "elements": [
@@ -107,7 +119,46 @@ fn get_jira_links_block(jira_issues: Vec<Issue>) -> serde_json::Value {
                 "elements": [
                     {
                         "type": "text",
-                        "text": "Jira tickets:\n",
+                        "text": "Pull requests:",
+                        "style": {
+                            "bold": true
+                        }
+                    }
+                ]
+            },
+            {
+                "type": "rich_text_list",
+                "style": "bullet",
+                "elements": pull_requests
+                .iter()
+                .map(|pr| {
+                    json!({
+                        "type": "rich_text_section",
+                        "elements": [
+                            {
+                                "type": "link",
+                                "text": format!("#{} {}", pr.number, pr.title),
+                                "url": pr.html_url,
+                            }
+                        ]
+                    })
+                })
+                .collect::<Vec<_>>()
+            }
+        ]
+    })
+}
+
+fn get_jira_tickets_block(jira_issues: Vec<Issue>) -> serde_json::Value {
+    json!({
+        "type": "rich_text",
+        "elements": [
+            {
+                "type": "rich_text_section",
+                "elements": [
+                    {
+                        "type": "text",
+                        "text": "Jira tickets:",
                         "style": {
                             "bold": true
                         }
@@ -127,9 +178,6 @@ fn get_jira_links_block(jira_issues: Vec<Issue>) -> serde_json::Value {
                                 "type": "link",
                                 "text": format!("{} {}", issue.key, issue.fields.summary),
                                 "url": issue.get_browse_url(),
-                                "style": {
-                                    "bold": true
-                                }
                             }
                         ]
                     })
@@ -170,13 +218,17 @@ fn get_deployed_by_block(run: &WorkflowRun) -> serde_json::Value {
         "elements": [
             {
                 "type": "mrkdwn",
-                "text": format!("*Deployed by:* {}", run.actor.login)
+                "text": format!("*Deployed by:*")
             },
             {
                 "type": "image",
                 "image_url": run.actor.avatar_url,
                 "alt_text": "cute cat"
-            }
+            },
+            {
+                "type": "mrkdwn",
+                "text": run.actor.login
+            },
         ]
     })
 }
