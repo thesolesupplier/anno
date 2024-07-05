@@ -16,13 +16,8 @@ use regex_lite::Regex;
 use serde::Deserialize;
 use std::{collections::HashSet, sync::OnceLock};
 
-#[derive(Deserialize)]
-pub struct Options {
-    pub is_mono_repo: Option<bool>,
-}
-
 pub async fn post(
-    Query(Options { is_mono_repo }): Query<Options>,
+    Query(Config { is_mono_repo }): Query<Config>,
     GithubEvent(WorkflowEvent { workflow_run: run }): GithubEvent<WorkflowEvent>,
 ) -> Result<StatusCode, AppError> {
     if !run.is_on_master() || !run.is_first_successful_attempt().await? {
@@ -86,4 +81,9 @@ async fn get_jira_issues(commit_messages: &[String]) -> Result<Vec<Issue>> {
     let issues = try_join_all(jira_requests).await?.into_iter().collect();
 
     Ok(issues)
+}
+
+#[derive(Deserialize)]
+pub struct Config {
+    pub is_mono_repo: Option<bool>,
 }
