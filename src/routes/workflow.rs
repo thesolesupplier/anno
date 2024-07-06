@@ -77,7 +77,7 @@ static JIRA_ISSUE_REGEX: OnceLock<Regex> = OnceLock::new();
 async fn get_jira_issues(commit_messages: &[String]) -> Result<Vec<Issue>> {
     let issue_regex = JIRA_ISSUE_REGEX.get_or_init(|| Regex::new(r"TFW-\d+").unwrap());
 
-    let jira_requests: Vec<_> = commit_messages
+    let requests: Vec<_> = commit_messages
         .iter()
         .filter_map(|m| issue_regex.find(m).map(|i| i.as_str()))
         .collect::<HashSet<&str>>()
@@ -85,7 +85,11 @@ async fn get_jira_issues(commit_messages: &[String]) -> Result<Vec<Issue>> {
         .map(Issue::get_by_key)
         .collect();
 
-    let issues = try_join_all(jira_requests).await?.into_iter().collect();
+    let issues = try_join_all(requests)
+        .await?
+        .into_iter()
+        .flatten()
+        .collect();
 
     Ok(issues)
 }
@@ -98,7 +102,7 @@ async fn get_pull_requests<'a>(
 ) -> Result<Vec<PullRequest>> {
     let pr_regex = PR_REGEX.get_or_init(|| Regex::new(r"Merge pull request #(\d+)").unwrap());
 
-    let gh_requests: Vec<_> = commit_messages
+    let requests: Vec<_> = commit_messages
         .iter()
         .filter_map(|m| pr_regex.captures(m).and_then(|c| Some(c.get(1)?.as_str())))
         .collect::<HashSet<&str>>()
@@ -106,7 +110,11 @@ async fn get_pull_requests<'a>(
         .map(|id| repo.get_pull_request(id))
         .collect();
 
-    let prs = try_join_all(gh_requests).await?.into_iter().collect();
+    let pull_requests = try_join_all(requests)
+        .await?
+        .into_iter()
+        .flatten()
+        .collect();
 
-    Ok(prs)
+    Ok(pull_requests)
 }

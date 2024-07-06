@@ -152,23 +152,33 @@ pub struct Repository {
 }
 
 impl Repository {
-    pub async fn get_pull_request(&self, id: &str) -> Result<PullRequest> {
+    pub async fn get_pull_request(&self, id: &str) -> Result<Option<PullRequest>> {
         let gh_token = config::get("GITHUB_ACCESS_TOKEN")?;
 
         let url = self.pulls_url.replace("{/number}", &format!("/{id}"));
 
-        let pr = reqwest::Client::new()
+        let response = match reqwest::Client::new()
             .get(url)
             .bearer_auth(gh_token)
             .header("Accept", "application/json")
             .header("User-Agent", "Anno")
             .send()
             .await?
-            .error_for_status()?
-            .json::<PullRequest>()
-            .await?;
+            .error_for_status()
+        {
+            Ok(res) => res,
+            Err(err) => {
+                if err.status() == Some(reqwest::StatusCode::NOT_FOUND) {
+                    return Ok(None);
+                } else {
+                    Err(err)
+                }
+            }?,
+        };
 
-        Ok(pr)
+        let pull_request = response.json::<PullRequest>().await?;
+
+        Ok(Some(pull_request))
     }
 
     pub fn get_compare_url(&self, old_sha: &str, new_sha: &str) -> String {
