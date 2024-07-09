@@ -101,21 +101,29 @@ impl WorkflowRuns {
     pub async fn get_prev_successful_run(
         run: &WorkflowRun,
     ) -> Result<Option<WorkflowRun>, AppError> {
-        let prev_runs = Self::get_prev_runs(run).await?.workflow_runs;
+        let mut page = 1;
 
-        for prev_run in prev_runs {
-            if prev_run.name == run.name
-                && prev_run.head_sha != run.head_sha
-                && prev_run.has_successful_attempt().await?
-            {
-                return Ok(Some(prev_run));
+        loop {
+            let prev_runs = Self::get_prev_runs(run, page).await?.workflow_runs;
+
+            if prev_runs.is_empty() {
+                return Ok(None);
             }
-        }
 
-        Ok(None)
+            for prev_run in prev_runs {
+                if prev_run.name == run.name
+                    && prev_run.head_sha != run.head_sha
+                    && prev_run.has_successful_attempt().await?
+                {
+                    return Ok(Some(prev_run));
+                }
+            }
+
+            page += 1;
+        }
     }
 
-    async fn get_prev_runs(run: &WorkflowRun) -> Result<Self, AppError> {
+    async fn get_prev_runs(run: &WorkflowRun, page: u8) -> Result<Self, AppError> {
         let gh_base_url = config::get("GITHUB_BASE_URL")?;
         let gh_token = config::get("GITHUB_ACCESS_TOKEN")?;
 
@@ -133,6 +141,7 @@ impl WorkflowRuns {
                 ("branch", "master"),
                 ("event", "push"),
                 ("created", &format!("<{}", run.created_at)),
+                ("page", &page.to_string()),
             ])
             .send()
             .await?
