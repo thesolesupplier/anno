@@ -223,7 +223,7 @@ fn get_deployed_by_block(run: &WorkflowRun) -> serde_json::Value {
             {
                 "type": "image",
                 "image_url": run.actor.avatar_url,
-                "alt_text": "cute cat"
+                "alt_text": run.actor.login
             },
             {
                 "type": "mrkdwn",
