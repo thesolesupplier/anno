@@ -176,7 +176,7 @@ impl Repository {
             }?,
         };
 
-        let pull_request = response.json::<PullRequest>().await?;
+        let pull_request: PullRequest = response.json().await?;
 
         Ok(Some(pull_request))
     }

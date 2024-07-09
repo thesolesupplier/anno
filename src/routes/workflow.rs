@@ -46,7 +46,7 @@ pub async fn post(
     let jira_issues = get_jira_issues(&commit_messages).await?;
     let pull_requests = get_pull_requests(&run.repository, &commit_messages).await?;
 
-    let summary = ai::summarise_release(&diff, &commit_messages).await?;
+    let summary = ai::get_summary(&diff, &commit_messages).await?;
 
     slack::post_release_message(slack::MessageInput {
         app_name,
@@ -100,7 +100,7 @@ async fn get_pull_requests<'a>(
     repo: &'a Repository,
     commit_messages: &'a [String],
 ) -> Result<Vec<PullRequest>> {
-    let pr_regex = PR_REGEX.get_or_init(|| Regex::new(r"Merge pull request #(\d+)").unwrap());
+    let pr_regex = PR_REGEX.get_or_init(|| Regex::new(r"#(\d+)").unwrap());
 
     let requests: Vec<_> = commit_messages
         .iter()
