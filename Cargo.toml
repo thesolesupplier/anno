@@ -31,4 +31,4 @@ tracing-subscriber = "0.3.18"
 
 [package.metadata.lambda.deploy]
 env_file = ".env.prod"
-timeout = 120
+timeout = 300
