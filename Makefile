@@ -5,6 +5,6 @@ build:
 	cargo lambda build --release
 
 deploy:
-	cargo lambda deploy --enable-function-url
+	cargo lambda deploy --enable-function-url --env-file .env.prod
 
 release: build deploy
