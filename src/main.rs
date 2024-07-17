@@ -5,19 +5,23 @@ mod services;
 mod utils;
 
 use axum::body::Body;
+use axum::extract::Request;
 use axum::http::header::{ACCEPT, ACCEPT_ENCODING, AUTHORIZATION, CONTENT_TYPE, ORIGIN};
 use axum::{routing::post, Router};
-use hyper::Request;
+use std::str::FromStr;
 use tower_http::{compression::CompressionLayer, cors::CorsLayer, trace::TraceLayer};
+use tracing::Level;
 use utils::config;
 
 #[tokio::main]
 async fn main() {
     config::load();
 
+    let log_level = config::get("LOG_LEVEL").unwrap();
+
     tracing_subscriber::fmt()
         .with_ansi(false)
-        .with_max_level(tracing::Level::INFO)
+        .with_max_level(Level::from_str(&log_level).unwrap())
         .json()
         .init();
 
