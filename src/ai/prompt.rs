@@ -18,7 +18,7 @@ pub const RELEASE_SUMMARY_PROMPT: &str = "
         Exclude Unchanged Sections: Only include headings for New features, Improvements, Bug fixes, and Dependency changes if there are updates to list for those headings.
     </Steps>
     <ExampleOutPut1>
-        <Changes>
+        <Output>
             *New features*:
             • Search results can now be filtered by date and relevance.
             • New avatar customisation options have been added to user profiles.
@@ -34,18 +34,18 @@ pub const RELEASE_SUMMARY_PROMPT: &str = "
         </Changes>
     </ExampleOutPut1>
     <ExampleOutPut2>
-        <Changes>
+        <Output>
             *New features*:
             • Added support for tracking URLs in Discord messages for new product discoveries.
         </Changes>
     </ExampleOutPut2>
     <ExampleOutPut3>
-        <Changes>
+        <Output>
             *Bug fixes*:
             • Fixed an issue where the Twitter hyperlink was not displaying properly.
         </Changes>
     </ExampleOutPut3>
     Please perform this analysis on the provided git code diff and commits and deliver a summary as described above based on that diff.
-    The output should be placed in <Changes> tags as demonstrated in the examples above.
+    The output should be placed in <Output> tags as demonstrated in the examples above.
     Avoid including headings for New features, Improvements, Bug fixes, or Dependency changes if there are no updates to list for those headings.
 ";
