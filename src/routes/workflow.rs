@@ -20,17 +20,16 @@ pub async fn post(
     Query(Config { is_mono_repo }): Query<Config>,
     GithubEvent(WorkflowEvent { workflow_run: run }): GithubEvent<WorkflowEvent>,
 ) -> Result<StatusCode, AppError> {
-    tracing::info!("Processing '{}' run", run.repository.name);
+    tracing::info!(r#"Processing "{}" run"#, run.repository.name);
+
     if !run.is_on_master() || !run.is_first_successful_attempt().await? {
         return Ok(StatusCode::OK);
     }
 
-    tracing::info!("Fetching previous successful run");
     let Some(prev_run) = WorkflowRuns::get_prev_successful_run(&run).await? else {
         return Ok(StatusCode::OK);
     };
 
-    tracing::info!("Initialising repository");
     let repo = Git::init(&run.repository)?;
 
     let new_commit = &run.head_sha;
@@ -41,22 +40,16 @@ pub async fn post(
         .then(|| run.get_mono_app_name())
         .flatten();
 
-    tracing::info!("Creating diff");
     let Some(diff) = repo.diff(new_commit, old_commit, app_name)? else {
         return Ok(StatusCode::OK);
     };
 
-    tracing::info!("Getting commit messages");
     let commit_messages = repo.get_commit_messages(old_commit, new_commit, app_name)?;
-    tracing::info!("Fetching JIRA issues");
     let jira_issues = get_jira_issues(&commit_messages).await?;
-    tracing::info!("Fetching Pull Requests");
     let pull_requests = get_pull_requests(&run.repository, &commit_messages).await?;
 
-    tracing::info!("Fetching AI summary");
     let summary = ai::get_summary(&diff, &commit_messages).await?;
 
-    tracing::info!("Posting slack message");
     slack::post_release_message(slack::MessageInput {
         app_name,
         is_mono_repo,
@@ -84,6 +77,8 @@ pub struct Config {
 static JIRA_ISSUE_REGEX: OnceLock<Regex> = OnceLock::new();
 
 async fn get_jira_issues(commit_messages: &[String]) -> Result<Vec<Issue>> {
+    tracing::info!("Fetching JIRA issues");
+
     let issue_regex = JIRA_ISSUE_REGEX.get_or_init(|| Regex::new(r"TFW-\d+").unwrap());
 
     let requests: Vec<_> = commit_messages
@@ -109,6 +104,8 @@ async fn get_pull_requests<'a>(
     repo: &'a Repository,
     commit_messages: &'a [String],
 ) -> Result<Vec<PullRequest>> {
+    tracing::info!("Fetching Pull Requests");
+
     let pr_regex = PR_REGEX.get_or_init(|| Regex::new(r"#(\d+)").unwrap());
 
     let requests: Vec<_> = commit_messages

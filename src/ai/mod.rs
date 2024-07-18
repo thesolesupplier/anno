@@ -11,6 +11,8 @@ use regex_lite::Regex;
 use std::sync::OnceLock;
 
 pub async fn get_summary(diff: &str, commit_messages: &[String]) -> Result<String> {
+    tracing::info!("Fetching AI summary");
+
     let llm_provider = config::get("LLM_PROVIDER")?;
 
     match llm_provider.as_str() {

@@ -35,6 +35,8 @@ pub async fn post_release_message(
         return Ok(());
     }
 
+    tracing::info!("Posting slack message");
+
     let webhook_url = config::get("SLACK_WEBHOOK_URL")?;
 
     let mut message_blocks: Vec<serde_json::Value> =

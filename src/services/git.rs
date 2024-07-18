@@ -13,6 +13,8 @@ pub struct Git {
 
 impl Git {
     pub fn init(repo: &Repository) -> Result<Self> {
+        tracing::info!("Initialising repository");
+
         let repos_dir = config::get("REPOS_DIR")?;
         let username = config::get("GITHUB_USERNAME")?;
         let token = config::get("GITHUB_ACCESS_TOKEN")?;
@@ -22,10 +24,14 @@ impl Git {
 
         let repo = match git2::Repository::open(&repo_disk_path) {
             Ok(repo) => {
+                tracing::info!("Repository already cloned, pulling latest changes");
                 repo.find_remote("origin")?.fetch(&["master"], None, None)?;
                 repo
             }
-            Err(_) => git2::Repository::clone(&repo_url, &repo_disk_path)?,
+            Err(_) => {
+                tracing::info!("Cloning repository");
+                git2::Repository::clone(&repo_url, &repo_disk_path)?
+            }
         };
 
         Ok(Self { repo })
@@ -37,6 +43,8 @@ impl Git {
         old_commit_hash: &str,
         app_name: Option<&str>,
     ) -> Result<Option<String>> {
+        tracing::info!("Creating diff");
+
         let new_commit = self.repo.revparse_single(new_commit_hash)?;
         let old_commit = self.repo.revparse_single(old_commit_hash)?;
 
@@ -84,6 +92,8 @@ impl Git {
         end_commit: &str,
         app_name: Option<&str>,
     ) -> Result<Vec<String>> {
+        tracing::info!("Getting commit messages");
+
         let mut revwalk = self.repo.revwalk()?;
         revwalk.set_sorting(git2::Sort::TIME)?;
 
