@@ -57,7 +57,9 @@ impl Git {
             let path = delta.old_file().path().unwrap().to_str().unwrap();
 
             let is_ignored_file = IGNORED_DIFF_FILES.iter().any(|f| path.contains(f));
-            let is_in_app_dir = app_name.map_or(true, |n| path.contains(&n.to_lowercase()));
+            let is_in_app_dir = app_name.map_or(true, |n| {
+                path.contains(&format!("apps/{}", n.to_lowercase()))
+            });
 
             if !is_ignored_file && is_in_app_dir {
                 let change_symbol = get_change_symbol(&line);
@@ -106,7 +108,7 @@ impl Git {
 
             if !affected_files
                 .iter()
-                .any(|path| path.contains(&app_name.to_lowercase()))
+                .any(|path| path.contains(&format!("apps/{}", app_name.to_lowercase())))
             {
                 return Ok(None);
             }
