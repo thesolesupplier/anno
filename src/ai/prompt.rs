@@ -5,6 +5,7 @@ pub const RELEASE_SUMMARY_PROMPT: &str = "
         Keep your description of each feature concise and non-technical, so that a non-technical team member can understand the change in simple terms.
         Avoid listing every commit message or code change. Instead, group the changes into categories like New features, Improvements, Bug fixes, and Dependency changes.
         Avoid describing how a feature will impact a user or experience, just describe what the feature is and what it does.
+        Avoid expanding acronyms, for example PLP, PDP or USP, to their full meanings because the users understand those.
         Specify any feature flags connected to these features, if any, along with the environments they are enabled in.
         List any dependency additions or updates that were made in the package.json file only.
     </Instructions>
@@ -31,19 +32,19 @@ pub const RELEASE_SUMMARY_PROMPT: &str = "
             *Dependency changes*:
             • Updated Library `XYZ` to version `1.3.0`.
             • Added library `ABC` version `2.1.0`.
-        </Changes>
+        </Output>
     </ExampleOutPut1>
     <ExampleOutPut2>
         <Output>
             *New features*:
             • Added support for tracking URLs in Discord messages for new product discoveries.
-        </Changes>
+        </Output>
     </ExampleOutPut2>
     <ExampleOutPut3>
         <Output>
             *Bug fixes*:
             • Fixed an issue where the Twitter hyperlink was not displaying properly.
-        </Changes>
+        </Output>
     </ExampleOutPut3>
     Please perform this analysis on the provided git code diff and commits and deliver a summary as described above based on that diff.
     The output should be placed in <Output> tags as demonstrated in the examples above.
