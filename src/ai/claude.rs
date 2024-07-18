@@ -27,7 +27,7 @@ impl AiSummary for Claude {
             .send()
             .await?
             .error_for_status()?
-            .json::<Response>()
+            .json::<ApiResponse>()
             .await?;
 
         let summary = response.content.remove(0).text;
@@ -37,7 +37,7 @@ impl AiSummary for Claude {
 }
 
 #[derive(Deserialize)]
-pub struct Response {
+pub struct ApiResponse {
     content: Vec<Content>,
 }
 

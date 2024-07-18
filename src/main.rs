@@ -4,8 +4,6 @@ mod routes;
 mod services;
 mod utils;
 
-use axum::body::Body;
-use axum::extract::Request;
 use axum::http::header::{ACCEPT, ACCEPT_ENCODING, AUTHORIZATION, CONTENT_TYPE, ORIGIN};
 use axum::{routing::post, Router};
 use std::str::FromStr;
@@ -25,11 +23,6 @@ async fn main() {
         .json()
         .init();
 
-    let trace_layer =
-        TraceLayer::new_for_http().on_request(|_: &Request<Body>, _: &tracing::Span| {
-            tracing::info!(message = "begin request!")
-        });
-
     let cors_layer = CorsLayer::new()
         .allow_headers([ACCEPT, ACCEPT_ENCODING, AUTHORIZATION, CONTENT_TYPE, ORIGIN])
         .allow_methods(tower_http::cors::Any)
@@ -38,7 +31,7 @@ async fn main() {
     let app = Router::new()
         .route("/workflow", post(routes::workflow::post))
         .layer(cors_layer)
-        .layer(trace_layer)
+        .layer(TraceLayer::new_for_http())
         .layer(CompressionLayer::new().gzip(true).deflate(true));
 
     // If compiled in debug mode, run the app as a regular Axum server.

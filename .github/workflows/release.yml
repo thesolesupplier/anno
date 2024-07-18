@@ -55,6 +55,7 @@ jobs:
           JIRA_API_KEY: ${{ secrets.JIRA_API_KEY }}
           JIRA_BASE_URL: https://thesolesupplier.atlassian.net
           LLM_PROVIDER: anthropic
+          LOG_LEVEL: INFO
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_BASE_URL: https://api.openai.com/v1
           OPENAI_MODEL: gpt-4o-2024-05-13
