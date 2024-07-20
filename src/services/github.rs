@@ -43,8 +43,6 @@ impl WorkflowRun {
     }
 
     async fn get_prev_successful_attempt(&self) -> Result<Option<WorkflowRun>, AppError> {
-        tracing::info!("Fetching previous successful attempt");
-
         let mut possible_prev_attempt = self.get_prev_attempt().await?;
 
         loop {

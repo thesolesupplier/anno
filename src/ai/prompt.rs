@@ -7,7 +7,7 @@ pub const RELEASE_SUMMARY_PROMPT: &str = "
         Avoid describing how a feature will impact a user or experience, just describe what the feature is and what it does.
         Avoid expanding acronyms, for example PLP, PDP or USP, to their full meanings because the users understand those.
         Specify any feature flags connected to these features, if any, along with the environments they are enabled in.
-        List any dependency additions or updates that were made in the package.json file only.
+        List any dependency additions, updates or removals that were made in the package.json file only.
     </Instructions>
     <Steps>
         Analyze the Diff: Examine the git code diff to understand the changes in the codebase.

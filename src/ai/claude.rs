@@ -1,4 +1,4 @@
-use super::{prompt::RELEASE_SUMMARY_PROMPT, AiSummary};
+use super::AiSummary;
 use crate::utils::config;
 use anyhow::Result;
 use serde::Deserialize;
@@ -21,7 +21,7 @@ impl AiSummary for Claude {
                 "model": model,
                 "max_tokens": 1024,
                 "temperature": 0.0,
-                "system": format!("Prompt: {RELEASE_SUMMARY_PROMPT}"),
+                "system": format!("Prompt: {}", Self::SYSTEM_PROMPT),
                 "messages": [{ "role": "user", "content": input }]
             }))
             .send()
