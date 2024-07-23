@@ -31,3 +31,4 @@ tracing-subscriber = "0.3.18"
 
 [package.metadata.lambda.deploy]
 timeout = 300
+tags = { "Name"="anno","Env"="prod" }
