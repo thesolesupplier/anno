@@ -1,4 +1,4 @@
-use super::AiSummary;
+use super::Ai;
 use crate::utils::config;
 use anyhow::Result;
 use serde::Deserialize;
@@ -6,8 +6,8 @@ use serde_json::json;
 
 pub struct Claude;
 
-impl AiSummary for Claude {
-    async fn make_request(input: String) -> Result<String> {
+impl Ai for Claude {
+    async fn make_request(system_input: &str, user_input: String) -> Result<String> {
         let base_url = config::get("ANTHROPIC_BASE_URL")?;
         let api_key = config::get("ANTHROPIC_API_KEY")?;
         let model = config::get("ANTHROPIC_MODEL")?;
@@ -21,8 +21,8 @@ impl AiSummary for Claude {
                 "model": model,
                 "max_tokens": 1024,
                 "temperature": 0.0,
-                "system": format!("Prompt: {}", Self::SYSTEM_PROMPT),
-                "messages": [{ "role": "user", "content": input }]
+                "system": system_input,
+                "messages": [{ "role": "user", "content": user_input }]
             }))
             .send()
             .await?

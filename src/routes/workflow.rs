@@ -20,7 +20,7 @@ pub async fn post(
     Query(Config { is_mono_repo }): Query<Config>,
     GithubEvent(WorkflowEvent { workflow_run: run }): GithubEvent<WorkflowEvent>,
 ) -> Result<StatusCode, AppError> {
-    tracing::info!(r#"Processing "{}" run"#, run.repository.name);
+    tracing::info!("Processing '{}' run", run.repository.name);
 
     if !run.is_on_master() || !run.is_first_successful_attempt().await? {
         return Ok(StatusCode::OK);
@@ -30,7 +30,7 @@ pub async fn post(
         return Ok(StatusCode::OK);
     };
 
-    let repo = Git::init(&run.repository)?;
+    let repo = Git::init(&run.repository.full_name, None)?;
 
     let new_commit = &run.head_sha;
     let old_commit = &prev_run.head_sha;

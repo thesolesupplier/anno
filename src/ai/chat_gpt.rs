@@ -1,4 +1,4 @@
-use super::AiSummary;
+use super::Ai;
 use crate::utils::config;
 use anyhow::Result;
 use serde::Deserialize;
@@ -6,8 +6,8 @@ use serde_json::json;
 
 pub struct ChatGpt;
 
-impl AiSummary for ChatGpt {
-    async fn make_request(input: String) -> Result<String> {
+impl Ai for ChatGpt {
+    async fn make_request(system_input: &str, user_input: String) -> Result<String> {
         let base_url = config::get("OPENAI_BASE_URL")?;
         let api_key = config::get("OPENAI_API_KEY")?;
         let model = config::get("OPENAI_MODEL")?;
@@ -21,8 +21,8 @@ impl AiSummary for ChatGpt {
                 "temperature": 0.0,
                 "frequency_penalty": 2.0,
                 "messages": [
-                    { "role": "system", "content": Self::SYSTEM_PROMPT },
-                    { "role": "user", "content": input }
+                    { "role": "system", "content": system_input },
+                    { "role": "user", "content": user_input }
                 ]
             }))
             .send()

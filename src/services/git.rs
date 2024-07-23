@@ -1,8 +1,9 @@
 use crate::utils::config;
 
-use super::github::Repository;
 use anyhow::Result;
-use git2::{Commit, DiffFormat, DiffLine, Oid};
+use git2::{
+    Commit, DiffFormat, DiffLine, ObjectType, Oid, TreeEntry, TreeWalkMode, TreeWalkResult,
+};
 use std::str;
 
 static IGNORED_DIFF_FILES: [&str; 3] = ["package-lock.json", ".github", ".css"];
@@ -12,20 +13,22 @@ pub struct Git {
 }
 
 impl Git {
-    pub fn init(repo: &Repository) -> Result<Self> {
-        tracing::info!("Initialising repository");
+    pub fn init(full_name: &str, branch: Option<&str>) -> Result<Self> {
+        tracing::info!("Initialising {full_name} repository");
 
         let repos_dir = config::get("REPOS_DIR")?;
         let username = config::get("GITHUB_USERNAME")?;
         let token = config::get("GITHUB_ACCESS_TOKEN")?;
 
-        let repo_url = format!("https://{username}:{token}@github.com/{}", repo.full_name);
-        let repo_disk_path = format!("{repos_dir}/{}", repo.name.replace('-', "_"));
+        let name = full_name.split('/').last().unwrap_or(full_name);
+        let repo_url = format!("https://{username}:{token}@github.com/{}", full_name);
+        let repo_disk_path = format!("{repos_dir}/{}", name.replace('-', "_"));
 
         let repo = match git2::Repository::open(&repo_disk_path) {
             Ok(repo) => {
                 tracing::info!("Repository already cloned, pulling latest changes");
-                repo.find_remote("origin")?.fetch(&["master"], None, None)?;
+                repo.find_remote("origin")?
+                    .fetch(&[branch.unwrap_or("master")], None, None)?;
                 repo
             }
             Err(_) => {
@@ -37,14 +40,44 @@ impl Git {
         Ok(Self { repo })
     }
 
+    pub fn get_contents(&self) -> Result<Vec<String>> {
+        let read_entry_contents = |entry: &TreeEntry| -> Result<String> {
+            let object_id = entry.to_object(&self.repo)?.id();
+            let blob = self.repo.find_blob(object_id)?;
+            let contents = str::from_utf8(blob.content())?.to_string();
+
+            Ok(contents)
+        };
+
+        let mut contents: Vec<String> = Vec::new();
+
+        self.repo
+            .head()?
+            .peel_to_commit()?
+            .tree()?
+            .walk(TreeWalkMode::PreOrder, |_, entry| {
+                if entry.kind() != Some(ObjectType::Blob) {
+                    return TreeWalkResult::Ok;
+                }
+
+                let Ok(content) = read_entry_contents(entry) else {
+                    return TreeWalkResult::Ok;
+                };
+
+                contents.push(content);
+
+                TreeWalkResult::Ok
+            })?;
+
+        Ok(contents)
+    }
+
     pub fn diff(
         &self,
         new_commit_hash: &str,
         old_commit_hash: &str,
         app_name: Option<&str>,
     ) -> Result<Option<String>> {
-        tracing::info!("Creating diff");
-
         let new_commit = self.repo.revparse_single(new_commit_hash)?;
         let old_commit = self.repo.revparse_single(old_commit_hash)?;
 

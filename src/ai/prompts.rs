@@ -50,3 +50,9 @@ pub const RELEASE_SUMMARY_PROMPT: &str = "
     The output should be placed in <Output> tags as demonstrated in the examples above.
     Avoid including headings for New features, Improvements, Bug fixes, or Dependency changes if there are no updates to list for those headings.
 ";
+
+pub const PR_ADR_ANALYSIS_PROMPT: &str = "
+    <Instructions>
+        Your role is to analyze pull requests and determine whether they conform to the provided ADRs
+    </Instructions>
+";

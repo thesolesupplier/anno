@@ -205,4 +205,12 @@ pub struct PullRequest {
     pub number: u64,
     pub title: String,
     pub html_url: String,
+    pub head: Commit,
+    pub base: Commit,
+}
+
+#[derive(Deserialize)]
+pub struct Commit {
+    pub r#ref: String,
+    pub sha: String,
 }

@@ -29,6 +29,7 @@ async fn main() {
         .allow_origin(tower_http::cors::Any);
 
     let app = Router::new()
+        .route("/pull-request", post(routes::pull_request::post))
         .route("/workflow", post(routes::workflow::post))
         .layer(cors_layer)
         .layer(TraceLayer::new_for_http())
