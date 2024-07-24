@@ -1,5 +1,7 @@
-use crate::utils::config;
-
+use crate::{
+    services::github::{AccessToken, GITHUB_ACCESS_TOKEN},
+    utils::config,
+};
 use anyhow::Result;
 use git2::{
     Commit, DiffFormat, DiffLine, ObjectType, Oid, TreeEntry, TreeWalkMode, TreeWalkResult,
@@ -13,15 +15,16 @@ pub struct Git {
 }
 
 impl Git {
-    pub fn init(full_name: &str, branch: Option<&str>) -> Result<Self> {
+    pub async fn init(full_name: &str, branch: Option<&str>) -> Result<Self> {
         tracing::info!("Initialising {full_name} repository");
 
         let repos_dir = config::get("REPOS_DIR")?;
-        let username = config::get("GITHUB_USERNAME")?;
-        let token = config::get("GITHUB_ACCESS_TOKEN")?;
+        let gh_token = GITHUB_ACCESS_TOKEN
+            .get_or_try_init(AccessToken::fetch)
+            .await?;
 
         let name = full_name.split('/').last().unwrap_or(full_name);
-        let repo_url = format!("https://{username}:{token}@github.com/{}", full_name);
+        let repo_url = format!("https://x-access-token:{gh_token}@github.com/{}", full_name);
         let repo_disk_path = format!("{repos_dir}/{}", name.replace('-', "_"));
 
         let repo = match git2::Repository::open(&repo_disk_path) {

@@ -25,11 +25,11 @@ pub async fn post(
         return Ok(StatusCode::OK);
     }
 
-    let adr_repo = Git::init(&adr_repo_full_name, None)?;
-    let pr_repo = Git::init(
-        &event.repository.full_name,
-        Some(&event.pull_request.head.r#ref),
-    )?;
+    let repo_full_name = &event.repository.full_name;
+    let branch = &event.pull_request.head.r#ref;
+
+    let pr_repo = Git::init(repo_full_name, Some(branch)).await?;
+    let adr_repo = Git::init(&adr_repo_full_name, None).await?;
 
     let old_commit = &event.pull_request.base.sha;
     let new_commit = &event.pull_request.head.sha;
@@ -42,7 +42,7 @@ pub async fn post(
 
     let analysis = ai::analyse_pr(&diff, &adrs).await?;
 
-    tracing::info!("{analysis}");
+    println!("{analysis}");
 
     Ok(StatusCode::OK)
 }

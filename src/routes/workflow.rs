@@ -30,7 +30,7 @@ pub async fn post(
         return Ok(StatusCode::OK);
     };
 
-    let repo = Git::init(&run.repository.full_name, None)?;
+    let repo = Git::init(&run.repository.full_name, None).await?;
 
     let new_commit = &run.head_sha;
     let old_commit = &prev_run.head_sha;
