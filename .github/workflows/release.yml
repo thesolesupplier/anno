@@ -57,7 +57,7 @@ jobs:
           GITHUB_APP_INSTALLATION_ID: 53127890
           GITHUB_APP_PRIVATE_KEY_BASE64: ${{ secrets.GH_APP_PRIVATE_KEY_BASE64 }}
           GITHUB_BASE_URL: https://api.github.com
-          GITHUB_SECRET: ${{ secrets.GH_SECRET }}
+          GITHUB_WEBHOOK_SECRET: ${{ secrets.GH_WEBHOOK_SECRET }}
           JIRA_API_KEY: ${{ secrets.JIRA_API_KEY }}
           JIRA_BASE_URL: https://thesolesupplier.atlassian.net
           LLM_PROVIDER: anthropic

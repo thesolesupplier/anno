@@ -23,15 +23,15 @@ impl Git {
             .get_or_try_init(AccessToken::fetch)
             .await?;
 
-        let name = full_name.split('/').last().unwrap_or(full_name);
+        let repo_name = full_name.split('/').last().unwrap_or(full_name);
         let repo_url = format!("https://x-access-token:{gh_token}@github.com/{}", full_name);
-        let repo_disk_path = format!("{repos_dir}/{}", name.replace('-', "_"));
+        let repo_disk_path = format!("{repos_dir}/{}", repo_name.replace('-', "_"));
+        let branch = branch.unwrap_or("master");
 
         let repo = match git2::Repository::open(&repo_disk_path) {
             Ok(repo) => {
                 tracing::info!("Repository already cloned, pulling latest changes");
-                repo.find_remote("origin")?
-                    .fetch(&[branch.unwrap_or("master")], None, None)?;
+                repo.find_remote("origin")?.fetch(&[branch], None, None)?;
                 repo
             }
             Err(_) => {

@@ -30,7 +30,7 @@ where
             return Ok(GithubEvent(value));
         }
 
-        let token = config::get("GITHUB_SECRET").unwrap();
+        let token = config::get("GITHUB_WEBHOOK_SECRET").unwrap();
 
         let signature_sha256 = req
             .headers()

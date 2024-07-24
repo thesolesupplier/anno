@@ -235,7 +235,6 @@ impl AccessToken {
         let gh_app_install_id = config::get("GITHUB_APP_INSTALLATION_ID")?;
 
         let jwt_token = jwt::create_github_token();
-        println!("JWT Token: {}", jwt_token);
         let url = format!("{gh_base_url}/app/installations/{gh_app_install_id}/access_tokens");
 
         let access_token = reqwest::Client::new()
@@ -249,8 +248,6 @@ impl AccessToken {
             .json::<AccessToken>()
             .await?
             .token;
-
-        println!("Access Token: {}", access_token);
 
         Ok(access_token)
     }

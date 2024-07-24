@@ -1,7 +1,7 @@
 use crate::utils::config;
 use base64::prelude::*;
 use chrono::{Duration, Utc};
-use jsonwebtoken::{encode, Algorithm::RS256, EncodingKey, Header};
+use jsonwebtoken::{Algorithm::RS256, EncodingKey, Header};
 use serde::{Deserialize, Serialize};
 
 pub fn create_github_token() -> String {
@@ -21,11 +21,7 @@ pub fn create_github_token() -> String {
 
     let key = EncodingKey::from_rsa_pem(&private_key).expect("Private key to be valid");
 
-    let token = encode(&Header::new(RS256), &claims, &key).expect("Encoding to be successful");
-
-    println!("JWT Token: {}", token);
-
-    token
+    jsonwebtoken::encode(&Header::new(RS256), &claims, &key).expect("Encoding to be successful")
 }
 
 #[derive(Debug, Serialize, Deserialize)]
