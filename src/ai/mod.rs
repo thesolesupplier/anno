@@ -6,14 +6,13 @@ use crate::utils::config;
 use anyhow::Result;
 use chat_gpt::ChatGpt;
 use claude::Claude;
-use prompts::{PR_ADR_ANALYSIS_PROMPT, RELEASE_SUMMARY_PROMPT};
 use regex_lite::Regex;
 use std::sync::OnceLock;
 
-pub async fn get_summary(diff: &str, commit_messages: &[String]) -> Result<String> {
+pub async fn get_release_summary(diff: &str, commit_messages: &[String]) -> Result<String> {
     match config::get("LLM_PROVIDER")?.as_str() {
-        "anthropic" => Claude::get_summary(diff, commit_messages).await,
-        _ => ChatGpt::get_summary(diff, commit_messages).await,
+        "anthropic" => Claude::get_release_summary(diff, commit_messages).await,
+        _ => ChatGpt::get_release_summary(diff, commit_messages).await,
     }
 }
 
@@ -28,7 +27,7 @@ impl<T> ReleaseSummary for T where T: Ai {}
 impl<T> PrAnalysis for T where T: Ai {}
 
 trait ReleaseSummary: Ai {
-    async fn get_summary(diff: &str, commit_messages: &[String]) -> Result<String> {
+    async fn get_release_summary(diff: &str, commit_messages: &[String]) -> Result<String> {
         tracing::info!("Fetching AI release summary");
 
         let commit_messages = commit_messages.join("\n");
@@ -38,7 +37,7 @@ trait ReleaseSummary: Ai {
             <CommitMessages>{commit_messages}</CommitMessages>"
         );
 
-        Self::prompt(RELEASE_SUMMARY_PROMPT, input).await
+        Self::prompt(prompts::RELEASE_SUMMARY, input).await
     }
 }
 
@@ -50,7 +49,7 @@ trait PrAnalysis: Ai {
 
         let input = format!("<Diff>{diff}</Diff><Adrs>{adrs}</Adrs>");
 
-        Self::prompt(PR_ADR_ANALYSIS_PROMPT, input).await
+        Self::prompt(prompts::PR_ADR_ANALYSIS, input).await
     }
 }
 

@@ -1,4 +1,4 @@
-pub const RELEASE_SUMMARY_PROMPT: &str = "
+pub const RELEASE_SUMMARY: &str = "
     <Instructions>
         Your role is to analyze a git code diff and related commit messages to identify and summarize the features that have been released.
         Avoid describing each individual code change. Instead, focus on understanding the broader context of the changes and what features they translate into.
@@ -51,8 +51,11 @@ pub const RELEASE_SUMMARY_PROMPT: &str = "
     Avoid including headings for New features, Improvements, Bug fixes, or Dependency changes if there are no updates to list for those headings.
 ";
 
-pub const PR_ADR_ANALYSIS_PROMPT: &str = "
+pub const PR_ADR_ANALYSIS: &str = "
     <Instructions>
-        Your role is to analyze pull requests and determine whether they conform to the provided ADRs
+        Your role is to analyse the code diff of pull requests and determine whether they conform to the provided ADRs
+        Keep your answer very short and to the point, focusing on the key points of the ADRs.
+        You can mention multiple ADRs in your response, but only mention the ADRs that the pull request does not conform to.
+        Respond in markdown format.
     </Instructions>
 ";
