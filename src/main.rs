@@ -9,6 +9,7 @@ use axum::{routing::post, Router};
 use std::str::FromStr;
 use tower_http::{compression::CompressionLayer, cors::CorsLayer, trace::TraceLayer};
 use tracing::Level;
+use tracing_subscriber::fmt;
 use utils::config;
 
 #[tokio::main]
@@ -17,7 +18,12 @@ async fn main() {
 
     let log_level = config::get("LOG_LEVEL").unwrap();
 
+    let timer = time::format_description::parse("[hour]:[minute]:[second]").expect("Valid time");
+    let time_offset = time::UtcOffset::current_local_offset().unwrap_or(time::UtcOffset::UTC);
+    let timer = fmt::time::OffsetTime::new(time_offset, timer);
+
     tracing_subscriber::fmt()
+        .with_timer(timer)
         .with_ansi(false)
         .with_max_level(Level::from_str(&log_level).unwrap())
         .json()

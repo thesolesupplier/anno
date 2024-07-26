@@ -26,12 +26,13 @@ serde = "1.0.202"
 serde_json = "1.0.117"
 serde_path_to_error = "0.1.16"
 subtle = "2.5.0"
+time = {version = "0.3.36", features = ["local-offset"]}
 tokio = {version = "1.38.0", features = ["rt-multi-thread", "macros"]}
 tower = "0.4.13"
 tower-http = {version = "0.5.2", features = ["cors", "compression-gzip", "compression-deflate", "trace"]}
 tracing = "0.1.40"
-tracing-subscriber = "0.3.18"
+tracing-subscriber = {version = "0.3.18", features = ["time"]}
 
 [package.metadata.lambda.deploy]
+tags = {"Name" = "anno", "Env" = "prod"}
 timeout = 300
-tags = { "Name"="anno","Env"="prod" }
