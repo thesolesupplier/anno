@@ -1,6 +1,7 @@
 use crate::utils::{config, error::AppError, jwt};
 use anyhow::Result;
 use serde::Deserialize;
+use serde_json::json;
 use tokio::sync::OnceCell;
 
 pub static GITHUB_ACCESS_TOKEN: OnceCell<String> = OnceCell::const_new();
@@ -64,9 +65,7 @@ impl WorkflowRun {
     }
 
     async fn get_prev_attempt(&self) -> Result<Option<WorkflowRun>, AppError> {
-        let gh_token = GITHUB_ACCESS_TOKEN
-            .get_or_try_init(AccessToken::fetch)
-            .await?;
+        let gh_token = AccessToken::get().await?;
 
         let Some(prev_attempt_url) = &self.previous_attempt_url else {
             return Ok(None);
@@ -132,9 +131,7 @@ impl WorkflowRuns {
 
     async fn get_prev_runs(run: &WorkflowRun, page: u8) -> Result<Self, AppError> {
         let gh_base_url = config::get("GITHUB_BASE_URL")?;
-        let gh_token = GITHUB_ACCESS_TOKEN
-            .get_or_try_init(AccessToken::fetch)
-            .await?;
+        let gh_token = AccessToken::get().await?;
 
         let url = format!(
             "{}/repos/{}/actions/runs",
@@ -171,9 +168,7 @@ pub struct Repository {
 
 impl Repository {
     pub async fn get_pull_request(&self, id: &str) -> Result<Option<PullRequest>> {
-        let gh_token = GITHUB_ACCESS_TOKEN
-            .get_or_try_init(AccessToken::fetch)
-            .await?;
+        let gh_token = AccessToken::get().await?;
 
         let url = self.pulls_url.replace("{/number}", &format!("/{id}"));
 
@@ -216,6 +211,26 @@ pub struct PullRequest {
     pub html_url: String,
     pub head: Commit,
     pub base: Commit,
+    pub body: Option<String>,
+    comments_url: String,
+}
+
+impl PullRequest {
+    pub async fn add_comment(&self, comment: &str) -> Result<()> {
+        let gh_token = AccessToken::get().await?;
+
+        reqwest::Client::new()
+            .post(&self.comments_url)
+            .bearer_auth(gh_token)
+            .header("Accept", "application/json")
+            .header("User-Agent", "Anno")
+            .json(&json!({ "body": comment }))
+            .send()
+            .await?
+            .error_for_status()?;
+
+        Ok(())
+    }
 }
 
 #[derive(Deserialize)]
@@ -230,7 +245,11 @@ pub struct AccessToken {
 }
 
 impl AccessToken {
-    pub async fn fetch() -> Result<String> {
+    pub async fn get() -> Result<&'static String> {
+        GITHUB_ACCESS_TOKEN.get_or_try_init(Self::fetch).await
+    }
+
+    async fn fetch() -> Result<String> {
         let gh_base_url = config::get("GITHUB_BASE_URL")?;
         let gh_app_install_id = config::get("GITHUB_APP_INSTALLATION_ID")?;
 
@@ -245,7 +264,7 @@ impl AccessToken {
             .send()
             .await?
             .error_for_status()?
-            .json::<AccessToken>()
+            .json::<Self>()
             .await?
             .token;
 

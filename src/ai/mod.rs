@@ -16,10 +16,10 @@ pub async fn get_release_summary(diff: &str, commit_messages: &[String]) -> Resu
     }
 }
 
-pub async fn analyse_pr(diff: &str, adrs: &[String]) -> Result<String> {
+pub async fn analyse_pr(input: PrAnalysisInput<'_>) -> Result<String> {
     match config::get("LLM_PROVIDER")?.as_str() {
-        "anthropic" => Claude::analyse_pr(diff, adrs).await,
-        _ => ChatGpt::analyse_pr(diff, adrs).await,
+        "anthropic" => Claude::analyse_pr(input).await,
+        _ => ChatGpt::analyse_pr(input).await,
     }
 }
 
@@ -42,15 +42,38 @@ trait ReleaseSummary: Ai {
 }
 
 trait PrAnalysis: Ai {
-    async fn analyse_pr(diff: &str, adrs: &[String]) -> Result<String> {
+    async fn analyse_pr(
+        PrAnalysisInput {
+            diff,
+            adrs,
+            commit_messages,
+            pr_body,
+        }: PrAnalysisInput<'_>,
+    ) -> Result<String> {
         tracing::info!("Fetching AI PR analysis");
 
         let adrs = adrs.join("\n");
+        let commit_messages = commit_messages.join("\n");
 
-        let input = format!("<Diff>{diff}</Diff><Adrs>{adrs}</Adrs>");
+        let mut input = format!(
+            "<Diff>{diff}</Diff>
+            <Adrs>{adrs}</Adrs>
+            <CommitMessages>{commit_messages}</CommitMessages>"
+        );
+
+        if let Some(pr_body) = pr_body {
+            input.push_str(&format!("<PrDescription>{pr_body}</PrDescription>"));
+        }
 
         Self::prompt(prompts::PR_ADR_ANALYSIS, input).await
     }
+}
+
+pub struct PrAnalysisInput<'a> {
+    pub diff: &'a str,
+    pub adrs: &'a [String],
+    pub commit_messages: &'a [String],
+    pub pr_body: &'a Option<String>,
 }
 
 trait Ai {

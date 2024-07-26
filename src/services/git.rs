@@ -1,7 +1,4 @@
-use crate::{
-    services::github::{AccessToken, GITHUB_ACCESS_TOKEN},
-    utils::config,
-};
+use crate::{services::github::AccessToken, utils::config};
 use anyhow::Result;
 use git2::{
     Commit, DiffFormat, DiffLine, ObjectType, Oid, TreeEntry, TreeWalkMode, TreeWalkResult,
@@ -19,9 +16,7 @@ impl Git {
         tracing::info!("Initialising {full_name} repository");
 
         let repos_dir = config::get("REPOS_DIR")?;
-        let gh_token = GITHUB_ACCESS_TOKEN
-            .get_or_try_init(AccessToken::fetch)
-            .await?;
+        let gh_token = AccessToken::get().await?;
 
         let repo_name = full_name.split('/').last().unwrap_or(full_name);
         let repo_url = format!("https://x-access-token:{gh_token}@github.com/{}", full_name);
