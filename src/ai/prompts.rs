@@ -53,9 +53,23 @@ pub const RELEASE_SUMMARY: &str = "
 
 pub const PR_ADR_ANALYSIS: &str = "
     <Instructions>
-        Your role is to analyse the code diff of pull requests and determine whether they conform to the provided ADRs
-        Keep your answer very short and to the point, focusing on the key points of the ADRs.
+        Your role is to analyse the code diff, commit messages and description (if present) of pull requests and determine whether the changes conform to the provided ADRs
+        Keep your answer very short and to the point, focusing on the key points of the ADRs and explaining how the pull request does not conform to them.
         You can mention multiple ADRs in your response, but only mention the ADRs that the pull request does not conform to.
-        Respond in markdown format.
+        It's important that the ADRs you mention must be explicitly violated in the pull request and not just a general observation.
+        Avoid instructing the developer to fix the pull request, just providing the ADRs that are not being followed is enough.
+        If the pull request has violted some ADRs, start your response with 'This PR may not conform with the following ADRs:'.
+        Format your response as a list of ADRs that the pull request does not conform to in markdown.
+        If the pull request conforms to all ADRs, simply state 'LGTM 👍'.
+        Your response should be place in <Output> tags.
     </Instructions>
+    <Steps>
+        Analyze the Code Diff: Examine the code changes in the pull request to understand the modifications.
+        Analyze Commit Messages: Review the commit messages to gain context and further insights into the changes.
+        Analyze Pull Request Description: If present, review the pull request description to understand the purpose of the changes.
+        Review the ADRs: Read the provided ADRs to understand the architectural decisions and guidelines.
+        Identify Non-Conformities: Determine which ADRs are not being followed in the pull request.
+        Summarize in Markdown: List the ADRs that the pull request does not conform to in markdown format.
+        Provide Feedback: Deliver the feedback to the developer.
+    </Steps>
 ";
