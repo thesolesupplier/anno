@@ -1,5 +1,5 @@
 use crate::{
-    ai::{self, PrAnalysisInput},
+    ai,
     middleware::validation::GithubEvent,
     services::{
         github::{PullRequest, Repository},
@@ -25,23 +25,19 @@ pub async fn post(
         return Ok(StatusCode::OK);
     }
 
-    let repo_full_name = &repo.full_name;
-    let branch = &pr.head.r#ref;
-
-    let pr_repo = Git::init(repo_full_name, Some(branch)).await?;
+    let pr_repo = Git::init(&repo.full_name, Some(&pr.head.r#ref)).await?;
     let old_commit = &pr.base.sha;
     let new_commit = &pr.head.sha;
 
+    let commit_messages = pr_repo.get_commit_messages(old_commit, new_commit, None)?;
     let Some(diff) = pr_repo.diff(new_commit, old_commit, None)? else {
         return Ok(StatusCode::OK);
     };
 
-    let commit_messages = pr_repo.get_commit_messages(old_commit, new_commit, None)?;
-
     let adr_repo = Git::init(&adr_repo_full_name, None).await?;
     let adrs = adr_repo.get_contents()?;
 
-    let analysis = ai::analyse_pr(PrAnalysisInput {
+    let analysis = ai::analyse_pr(ai::PrAnalysisInput {
         diff: &diff,
         adrs: &adrs,
         commit_messages: &commit_messages,
