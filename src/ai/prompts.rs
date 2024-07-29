@@ -59,6 +59,7 @@ pub const PR_ADR_ANALYSIS: &str = "
         It's important that the ADRs you mention must be explicitly violated in the pull request and not just a general observation.
         Avoid instructing the developer to fix the pull request, just providing the ADRs that are not being followed is enough.
         If the pull request has violted some ADRs, start your response with 'This PR may not conform with the following ADRs:'.
+        If linking to the ADRs, ensure the paths to the files start with 'https://github.com/The-Sole-Supplier/ADRs/blob/master/'
         Format your response as a list of ADRs that the pull request does not conform to in markdown.
         If the pull request conforms to all ADRs, simply state 'LGTM 👍'.
         Your response should be place in <Output> tags.
