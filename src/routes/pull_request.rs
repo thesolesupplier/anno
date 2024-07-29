@@ -19,7 +19,7 @@ pub async fn post(
 ) -> Result<StatusCode, AppError> {
     let adr_repo_full_name = config::get("ADR_REPO_FULL_NAME")?;
 
-    tracing::info!("Processing '{}' pull request on '{}'", pr.title, repo.name,);
+    tracing::info!("Processing '{}' pull request on '{}'", pr.title, repo.name);
 
     if action != "opened" {
         return Ok(StatusCode::OK);
@@ -46,8 +46,6 @@ pub async fn post(
     .await?;
 
     pr.add_comment(&analysis).await?;
-
-    println!("{analysis}");
 
     Ok(StatusCode::OK)
 }
