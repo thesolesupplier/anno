@@ -32,12 +32,12 @@ trait ReleaseSummary: Ai {
 
         let commit_messages = commit_messages.join("\n");
 
-        let input = format!(
+        let user_prompt = format!(
             "<Diff>{diff}</Diff>
             <CommitMessages>{commit_messages}</CommitMessages>"
         );
 
-        Self::prompt(prompts::RELEASE_SUMMARY, input).await
+        Self::prompt(prompts::RELEASE_SUMMARY, user_prompt).await
     }
 }
 
@@ -55,17 +55,17 @@ trait PrAnalysis: Ai {
         let adrs = adrs.join("\n");
         let commit_messages = commit_messages.join("\n");
 
-        let mut input = format!(
+        let mut user_prompt = format!(
             "<Diff>{diff}</Diff>
             <Adrs>{adrs}</Adrs>
             <CommitMessages>{commit_messages}</CommitMessages>"
         );
 
         if let Some(pr_body) = pr_body {
-            input.push_str(&format!("<PrDescription>{pr_body}</PrDescription>"));
+            user_prompt.push_str(&format!("<PrDescription>{pr_body}</PrDescription>"));
         }
 
-        Self::prompt(prompts::PR_ADR_ANALYSIS, input).await
+        Self::prompt(prompts::PR_ADR_ANALYSIS, user_prompt).await
     }
 }
 
@@ -77,8 +77,8 @@ pub struct PrAnalysisInput<'a> {
 }
 
 trait Ai {
-    async fn prompt(system_prompt: &str, input: String) -> Result<String> {
-        let response = Self::make_request(system_prompt, input).await?;
+    async fn prompt(system_prompt: &str, user_prompt: String) -> Result<String> {
+        let response = Self::make_request(system_prompt, user_prompt).await?;
 
         Ok(Self::extract_output(response))
     }

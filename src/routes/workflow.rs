@@ -17,7 +17,7 @@ use serde::Deserialize;
 use std::{collections::HashSet, sync::OnceLock};
 
 pub async fn post(
-    Query(Config { is_mono_repo }): Query<Config>,
+    Query(WorkflowParams { is_mono_repo }): Query<WorkflowParams>,
     GithubEvent(WorkflowEvent { workflow_run: run }): GithubEvent<WorkflowEvent>,
 ) -> Result<StatusCode, AppError> {
     tracing::info!("Processing '{}' run", run.repository.name);
@@ -70,7 +70,7 @@ pub struct WorkflowEvent {
 }
 
 #[derive(Deserialize)]
-pub struct Config {
+pub struct WorkflowParams {
     pub is_mono_repo: Option<bool>,
 }
 
