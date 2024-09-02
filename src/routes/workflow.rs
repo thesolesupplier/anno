@@ -16,7 +16,7 @@ use regex_lite::Regex;
 use serde::Deserialize;
 use std::{collections::HashSet, sync::OnceLock};
 
-pub async fn post(
+pub async fn release_summary(
     Query(WorkflowParams { is_mono_repo }): Query<WorkflowParams>,
     GithubEvent(WorkflowEvent { workflow_run: run }): GithubEvent<WorkflowEvent>,
 ) -> Result<StatusCode, AppError> {

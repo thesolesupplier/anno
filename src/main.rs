@@ -35,8 +35,15 @@ async fn main() {
         .allow_origin(tower_http::cors::Any);
 
     let app = Router::new()
-        .route("/pull-request", post(routes::pull_request::post))
-        .route("/workflow", post(routes::workflow::post))
+        .route(
+            "/pull-request/adr",
+            post(routes::pull_request::adr_analysis),
+        )
+        .route(
+            "/pull-request/bugs",
+            post(routes::pull_request::bug_analysis),
+        )
+        .route("/workflow", post(routes::workflow::release_summary))
         .layer(cors_layer)
         .layer(TraceLayer::new_for_http())
         .layer(CompressionLayer::new().gzip(true).deflate(true));

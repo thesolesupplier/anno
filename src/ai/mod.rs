@@ -16,15 +16,23 @@ pub async fn get_release_summary(diff: &str, commit_messages: &[String]) -> Resu
     }
 }
 
-pub async fn analyse_pr(input: PrAnalysisInput<'_>) -> Result<String> {
+pub async fn get_pr_adr_analysis(input: PrAnalysisInput<'_>) -> Result<String> {
     match config::get("LLM_PROVIDER")?.as_str() {
-        "anthropic" => Claude::analyse_pr(input).await,
-        _ => ChatGpt::analyse_pr(input).await,
+        "anthropic" => Claude::get_pr_adr_analysis(input).await,
+        _ => ChatGpt::get_pr_adr_analysis(input).await,
+    }
+}
+
+pub async fn get_pr_bug_analysis(diff: &str, commit_messages: &[String]) -> Result<String> {
+    match config::get("LLM_PROVIDER")?.as_str() {
+        "anthropic" => Claude::get_pr_bug_analysis(diff, commit_messages).await,
+        _ => ChatGpt::get_pr_bug_analysis(diff, commit_messages).await,
     }
 }
 
 impl<T> ReleaseSummary for T where T: Ai {}
-impl<T> PrAnalysis for T where T: Ai {}
+impl<T> PrAdrAnalysis for T where T: Ai {}
+impl<T> PrBugAnalysis for T where T: Ai {}
 
 trait ReleaseSummary: Ai {
     async fn get_release_summary(diff: &str, commit_messages: &[String]) -> Result<String> {
@@ -41,8 +49,23 @@ trait ReleaseSummary: Ai {
     }
 }
 
-trait PrAnalysis: Ai {
-    async fn analyse_pr(
+trait PrBugAnalysis: Ai {
+    async fn get_pr_bug_analysis(diff: &str, commit_messages: &[String]) -> Result<String> {
+        tracing::info!("Fetching AI PR bug analysis");
+
+        let commit_messages = commit_messages.join("\n");
+
+        let user_prompt = format!(
+            "<Diff>{diff}</Diff>
+            <CommitMessages>{commit_messages}</CommitMessages>"
+        );
+
+        Self::prompt(prompts::PR_BUG_ANALYSIS, user_prompt).await
+    }
+}
+
+trait PrAdrAnalysis: Ai {
+    async fn get_pr_adr_analysis(
         PrAnalysisInput {
             diff,
             adrs,
@@ -50,7 +73,7 @@ trait PrAnalysis: Ai {
             pr_body,
         }: PrAnalysisInput<'_>,
     ) -> Result<String> {
-        tracing::info!("Fetching AI PR analysis");
+        tracing::info!("Fetching AI PR ADR analysis");
 
         let adrs = adrs.join("\n");
         let commit_messages = commit_messages.join("\n");

@@ -74,3 +74,25 @@ pub const PR_ADR_ANALYSIS: &str = "
         Provide Feedback: Deliver the feedback to the developer.
     </Steps>
 ";
+
+pub const PR_BUG_ANALYSIS: &str = "
+    <Instructions>
+        Your role is to analyse the code diff and commit messages of pull requests to identify any potential bugs or issues.
+        Keep your response very short and to the point, focusing on the key points of the bugs and explaining why they are bugs.
+        You can mention multiple bugs in your response, but only mention the bugs that are present in the pull request.
+        Avoid instructing the developer to fix the bugs, just providing the bugs is enough.
+        If the pull request has bugs, start your response with 'This PR may contain the following bugs:'.
+        Format your response as a list of bugs that are present in the pull request in markdown.
+        Make sure the bugs you mention are explicitly present in the pull request and not just a general observation.
+        When listing the bug, provide a snippet of the code that is causing the bug, if possible.
+        If the pull request does not contain any bugs, simply state 'LGTM 👍'.
+        Your response should be place in <Output> tags.
+    </Instructions>
+    <Steps>
+        Analyze the Code Diff: Examine the code changes in the pull request to understand the modifications.
+        Analyze Commit Messages: Review the commit messages to gain context and further insights into the changes.
+        Identify Potential Bugs: Determine any potential bugs or issues in the code changes.
+        Summarize in Markdown: List the bugs that are present in the pull request in markdown format.
+        Provide Feedback: Deliver the feedback to the developer.
+    </Steps>
+";
