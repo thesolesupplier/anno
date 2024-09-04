@@ -212,6 +212,7 @@ pub struct PullRequest {
     pub head: Commit,
     pub base: Commit,
     pub body: Option<String>,
+    url: String,
     comments_url: String,
 }
 
@@ -230,6 +231,23 @@ impl PullRequest {
             .error_for_status()?;
 
         Ok(())
+    }
+
+    pub async fn fetch_diff(&self) -> Result<String> {
+        let gh_token = AccessToken::get().await?;
+
+        let diff = reqwest::Client::new()
+            .get(&self.url)
+            .bearer_auth(gh_token)
+            .header("Accept", "application/vnd.github.diff")
+            .header("User-Agent", "Anno")
+            .send()
+            .await?
+            .error_for_status()?
+            .text()
+            .await?;
+
+        Ok(diff)
     }
 }
 

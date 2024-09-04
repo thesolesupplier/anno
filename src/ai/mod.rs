@@ -23,10 +23,10 @@ pub async fn get_pr_adr_analysis(input: PrAnalysisInput<'_>) -> Result<String> {
     }
 }
 
-pub async fn get_pr_bug_analysis(diff: &str, commit_messages: &[String]) -> Result<String> {
+pub async fn get_pr_bug_analysis(diff: &str) -> Result<String> {
     match config::get("LLM_PROVIDER")?.as_str() {
-        "anthropic" => Claude::get_pr_bug_analysis(diff, commit_messages).await,
-        _ => ChatGpt::get_pr_bug_analysis(diff, commit_messages).await,
+        "anthropic" => Claude::get_pr_bug_analysis(diff).await,
+        _ => ChatGpt::get_pr_bug_analysis(diff).await,
     }
 }
 
@@ -50,15 +50,10 @@ trait ReleaseSummary: Ai {
 }
 
 trait PrBugAnalysis: Ai {
-    async fn get_pr_bug_analysis(diff: &str, commit_messages: &[String]) -> Result<String> {
+    async fn get_pr_bug_analysis(diff: &str) -> Result<String> {
         tracing::info!("Fetching AI PR bug analysis");
 
-        let commit_messages = commit_messages.join("\n");
-
-        let user_prompt = format!(
-            "<Diff>{diff}</Diff>
-            <CommitMessages>{commit_messages}</CommitMessages>"
-        );
+        let user_prompt = format!("<Diff>{diff}</Diff>");
 
         Self::prompt(prompts::PR_BUG_ANALYSIS, user_prompt).await
     }
