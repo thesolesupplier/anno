@@ -96,11 +96,11 @@ impl Git {
             let path = delta.old_file().path().unwrap().to_str().unwrap();
 
             let is_ignored_file = IGNORED_DIFF_FILES.iter().any(|f| path.contains(f));
-            let is_in_app_dir = app_name.map_or(true, |n| {
-                path.contains(&format!("apps/{}", n.to_lowercase()))
+            let is_relevant_file = app_name.map_or(true, |n| {
+                !path.contains("apps/") || path.contains(&format!("apps/{}", n.to_lowercase()))
             });
 
-            if !is_ignored_file && is_in_app_dir {
+            if !is_ignored_file && is_relevant_file {
                 let change_symbol = get_change_symbol(&line);
                 let content = str::from_utf8(line.content()).unwrap();
 
