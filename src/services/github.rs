@@ -1,5 +1,6 @@
 use crate::utils::{config, error::AppError, jwt};
 use anyhow::Result;
+use futures::future::try_join_all;
 use serde::Deserialize;
 use serde_json::json;
 use tokio::sync::OnceCell;
@@ -217,22 +218,6 @@ pub struct PullRequest {
 }
 
 impl PullRequest {
-    pub async fn add_comment(&self, comment: &str) -> Result<()> {
-        let gh_token = AccessToken::get().await?;
-
-        reqwest::Client::new()
-            .post(&self.comments_url)
-            .bearer_auth(gh_token)
-            .header("Accept", "application/json")
-            .header("User-Agent", "Anno")
-            .json(&json!({ "body": comment }))
-            .send()
-            .await?
-            .error_for_status()?;
-
-        Ok(())
-    }
-
     pub async fn fetch_diff(&self) -> Result<String> {
         let gh_token = AccessToken::get().await?;
 
@@ -249,12 +234,111 @@ impl PullRequest {
 
         Ok(diff)
     }
+
+    pub async fn add_comment(&self, comment: &str) -> Result<()> {
+        let gh_token = AccessToken::get().await?;
+
+        reqwest::Client::new()
+            .post(&self.comments_url)
+            .bearer_auth(gh_token)
+            .header("Accept", "application/json")
+            .header("User-Agent", "Anno")
+            .json(&json!({ "body": comment }))
+            .send()
+            .await?
+            .error_for_status()?;
+
+        Ok(())
+    }
+
+    pub async fn hide_outdated_comments(&self) -> Result<()> {
+        let bot_comments: Vec<Comment> = self
+            .get_comments()
+            .await?
+            .into_iter()
+            .filter(|c| c.is_by_anno_bot())
+            .collect();
+
+        let hide_requests: Vec<_> = bot_comments.iter().map(|c| c.mark_as_outdated()).collect();
+
+        try_join_all(hide_requests).await?;
+
+        Ok(())
+    }
+
+    async fn get_comments(&self) -> Result<Vec<Comment>> {
+        let gh_token = AccessToken::get().await?;
+
+        let comments = reqwest::Client::new()
+            .get(&self.comments_url)
+            .bearer_auth(gh_token)
+            .header("Accept", "application/json")
+            .header("User-Agent", "Anno")
+            .query(&[("per_page", "100")])
+            .send()
+            .await?
+            .error_for_status()?
+            .json::<Vec<Comment>>()
+            .await?;
+
+        Ok(comments)
+    }
 }
 
 #[derive(Deserialize)]
 pub struct Commit {
     pub r#ref: String,
     pub sha: String,
+}
+
+#[derive(Deserialize)]
+pub struct Comment {
+    user: User,
+    node_id: String,
+}
+
+impl Comment {
+    pub fn is_by_anno_bot(&self) -> bool {
+        let bot_user_id = config::get("GITHUB_BOT_USER_ID").expect("GITHUB_BOT_USER_ID to be set");
+
+        self.user.id.to_string() == bot_user_id
+    }
+
+    pub async fn mark_as_outdated(&self) -> Result<()> {
+        let gh_token = AccessToken::get().await?;
+
+        let mutation = format!(
+            r#"
+            mutation {{
+                minimizeComment(input: {{
+                    subjectId: "{comment_id}",
+                    classifier: OUTDATED
+                }}) {{
+                    minimizedComment {{
+                        isMinimized
+                    }}
+                }}
+            }}"#,
+            comment_id = &self.node_id
+        );
+
+        reqwest::Client::new()
+            .post("https://api.github.com/graphql")
+            .bearer_auth(gh_token)
+            .header("Accept", "application/json")
+            .header("User-Agent", "Anno")
+            .json(&json!({ "query": mutation }))
+            .send()
+            .await?
+            .error_for_status()?;
+
+        Ok(())
+    }
+}
+
+#[derive(Deserialize)]
+pub struct User {
+    id: i64,
 }
 
 #[derive(Deserialize)]

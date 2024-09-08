@@ -59,12 +59,16 @@ pub async fn bug_analysis(
 ) -> Result<StatusCode, AppError> {
     tracing::info!("Processing '{}' pull request on '{}'", pr.title, repo.name);
 
-    if action != "opened" {
+    if action != "opened" && action != "synchronize" {
         return Ok(StatusCode::OK);
     }
 
     let diff = pr.fetch_diff().await?;
     let analysis = ai::get_pr_bug_analysis(&diff).await?;
+
+    if action == "synchronize" {
+        pr.hide_outdated_comments().await?;
+    }
 
     pr.add_comment(&analysis).await?;
 
