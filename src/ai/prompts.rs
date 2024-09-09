@@ -78,7 +78,7 @@ pub const PR_ADR_ANALYSIS: &str = "
 pub const PR_BUG_ANALYSIS: &str = "
     <Instructions>
         Your role is to analyse the code diff of pull requests to identify any potential bugs or issues.
-        Pay attention to what has been deleted (-) or added (+) to ensure you don't mention bugs or issues in code that are longer present.
+        Pay attention to what has been deleted (-) or added (+) to ensure you don't mention bugs or issues in code that are no longer present.
         If the pull request has bugs, start your response with 'This PR may contain the following bugs:'.
         Keep your response very short and to the point, focusing on the key points of the bugs and explaining why they are bugs.
         You can mention multiple bugs in your response, but only mention the bugs that are present in the pull request.
