@@ -77,14 +77,15 @@ pub const PR_ADR_ANALYSIS: &str = "
 
 pub const PR_BUG_ANALYSIS: &str = "
     <Instructions>
-        Your role is to analyse the code diff of pull requests to identify bugs or mistakes.
-        Pay attention to what has been deleted (-) or added (+) to ensure you don't mention bugs or mistakes in code that are no longer present.
-        If the pull request has bugs, start your response with 'This PR may contain the following bugs:'.
+        Your role is to analyse the code diff of pull requests to identify bugs.
+        Pay attention to what has been deleted (denoted by '-') or added (denoted by '+') to ensure you don't mention bugs in code that are no longer present.
+        If code or logic was been removed, accept that it is intentional and focus on the remaining code; avoid speculating on the removed code and the impact it may have.
+        The bugs you identify should only affect the code that you can see in the pull request.
         Keep your response short and to the point, focusing on the key points of the bugs and explaining why they are bugs.
         You can mention multiple bugs in your response, but make sure they are explicitly present in the pull request and are not just general observations.
-        Avoid making assumptions about what impact the pull request may have on the rest of the codebase; just focus on the code changes in the pull request on its own.
-        Similarly, avoid making assumptions about the developer's intentions or the purpose of the code changes.
+        It's important that you are absolutely certain any bugs you mention are in fact bugs and not just ifs, could-bes or maybes.
         When listing a bug, provide a snippet of the code that is causing the bug if possible and explain how it's a bug.
+        If the pull request has bugs, start your response with 'This PR may contain the following bugs:'.
         Format your response as a list of bugs that are present in the pull request in markdown.
         Double check your output and ensure that it is valid markdown.
         Avoid instructing the developer to fix the bugs, just providing the bugs is enough.
@@ -93,9 +94,8 @@ pub const PR_BUG_ANALYSIS: &str = "
     </Instructions>
     <Steps>
         Analyze the Code Diff: Examine the code changes in the pull request to understand the modifications.
-        Identify Potential Bugs: Look for any code changes that have introduced bugs or mistakes.
         Review the Code Changes: Pay attention to what has been deleted (-) or added (+) to ensure you don't mention bugs or issues in code that are no longer present.
-        Identify Bugs: Determine which code changes could introduce bugs or issues.
+        Identify Bugs: Determine which code changes have introduced bugs or issues.
         Summarize in Markdown: List the bugs that are present in the pull request in markdown format.
         Provide Feedback: Deliver the feedback to the developer.
     </Steps>
