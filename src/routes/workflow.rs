@@ -1,5 +1,5 @@
 use crate::{
-    ai,
+    ai::{self, ReleaseSummary},
     middleware::validation::GithubEvent,
     services::{
         github::{PullRequest, Repository, WorkflowRun, WorkflowRuns},
@@ -48,7 +48,7 @@ pub async fn release_summary(
     let jira_issues = get_jira_issues(&commit_messages).await?;
     let pull_requests = get_pull_requests(&run.repository, &commit_messages).await?;
 
-    let summary = ai::get_release_summary(&diff, &commit_messages).await?;
+    let summary = ai::ChatGpt::get_release_summary(&diff, &commit_messages).await?;
 
     slack::post_release_message(slack::MessageInput {
         app_name,

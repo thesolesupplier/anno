@@ -1,5 +1,5 @@
 use crate::{
-    ai,
+    ai::{self, PrAdrAnalysis, PrBugAnalysis},
     middleware::validation::GithubEvent,
     services::{
         github::{PullRequest, Repository},
@@ -37,7 +37,7 @@ pub async fn adr_analysis(
     let adr_repo = Git::init(&adr_repo_full_name, None).await?;
     let adrs = adr_repo.get_contents()?;
 
-    let analysis = ai::get_pr_adr_analysis(ai::PrAnalysisInput {
+    let analysis = ai::Claude::get_pr_adr_analysis(ai::PrAnalysisInput {
         diff: &diff,
         adrs: &adrs,
         commit_messages: &commit_messages,
@@ -64,7 +64,8 @@ pub async fn bug_analysis(
     }
 
     let diff = pr.fetch_diff().await?;
-    let analysis = ai::get_pr_bug_analysis(&diff).await?;
+
+    let analysis = ai::Claude::get_pr_bug_analysis(&diff).await?;
 
     if action == "synchronize" {
         pr.hide_outdated_comments().await?;

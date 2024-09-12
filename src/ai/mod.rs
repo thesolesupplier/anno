@@ -2,39 +2,40 @@ mod chat_gpt;
 mod claude;
 mod prompts;
 
-use crate::utils::config;
 use anyhow::Result;
-use chat_gpt::ChatGpt;
-use claude::Claude;
+pub use chat_gpt::ChatGpt;
+pub use claude::Claude;
 use regex_lite::Regex;
 use std::sync::OnceLock;
 
-pub async fn get_release_summary(diff: &str, commit_messages: &[String]) -> Result<String> {
-    match config::get("LLM_PROVIDER")?.as_str() {
-        "anthropic" => Claude::get_release_summary(diff, commit_messages).await,
-        _ => ChatGpt::get_release_summary(diff, commit_messages).await,
+static OUTPUT_REGEX: OnceLock<Regex> = OnceLock::new();
+
+pub trait Ai {
+    async fn prompt(system_prompt: &str, user_prompt: String) -> Result<String> {
+        let response = Self::make_request(system_prompt, user_prompt).await?;
+
+        Ok(Self::extract_output(response))
+    }
+
+    async fn make_request(system_prompt: &str, input: String) -> Result<String>;
+
+    fn extract_output(output: String) -> String {
+        let output_regex =
+            OUTPUT_REGEX.get_or_init(|| Regex::new(r"(?s)<Output>(.*?)<\/Output>").unwrap());
+
+        let Some(matches) = output_regex.captures(&output) else {
+            return output;
+        };
+
+        if matches.len() == 0 {
+            return output;
+        }
+
+        matches.get(1).unwrap().as_str().trim().to_string()
     }
 }
 
-pub async fn get_pr_adr_analysis(input: PrAnalysisInput<'_>) -> Result<String> {
-    match config::get("LLM_PROVIDER")?.as_str() {
-        "anthropic" => Claude::get_pr_adr_analysis(input).await,
-        _ => ChatGpt::get_pr_adr_analysis(input).await,
-    }
-}
-
-pub async fn get_pr_bug_analysis(diff: &str) -> Result<String> {
-    match config::get("LLM_PROVIDER")?.as_str() {
-        "anthropic" => Claude::get_pr_bug_analysis(diff).await,
-        _ => ChatGpt::get_pr_bug_analysis(diff).await,
-    }
-}
-
-impl<T> ReleaseSummary for T where T: Ai {}
-impl<T> PrAdrAnalysis for T where T: Ai {}
-impl<T> PrBugAnalysis for T where T: Ai {}
-
-trait ReleaseSummary: Ai {
+pub trait ReleaseSummary: Ai {
     async fn get_release_summary(diff: &str, commit_messages: &[String]) -> Result<String> {
         tracing::info!("Fetching AI release summary");
 
@@ -49,7 +50,7 @@ trait ReleaseSummary: Ai {
     }
 }
 
-trait PrBugAnalysis: Ai {
+pub trait PrBugAnalysis: Ai {
     async fn get_pr_bug_analysis(diff: &str) -> Result<String> {
         tracing::info!("Fetching AI PR bug analysis");
 
@@ -59,7 +60,7 @@ trait PrBugAnalysis: Ai {
     }
 }
 
-trait PrAdrAnalysis: Ai {
+pub trait PrAdrAnalysis: Ai {
     async fn get_pr_adr_analysis(
         PrAnalysisInput {
             diff,
@@ -94,29 +95,6 @@ pub struct PrAnalysisInput<'a> {
     pub pr_body: &'a Option<String>,
 }
 
-trait Ai {
-    async fn prompt(system_prompt: &str, user_prompt: String) -> Result<String> {
-        let response = Self::make_request(system_prompt, user_prompt).await?;
-
-        Ok(Self::extract_output(response))
-    }
-
-    async fn make_request(system_prompt: &str, input: String) -> Result<String>;
-
-    fn extract_output(output: String) -> String {
-        let output_regex =
-            OUTPUT_REGEX.get_or_init(|| Regex::new(r"(?s)<Output>(.*?)<\/Output>").unwrap());
-
-        let Some(matches) = output_regex.captures(&output) else {
-            return output;
-        };
-
-        if matches.len() == 0 {
-            return output;
-        }
-
-        matches.get(1).unwrap().as_str().trim().to_string()
-    }
-}
-
-static OUTPUT_REGEX: OnceLock<Regex> = OnceLock::new();
+impl<T> ReleaseSummary for T where T: Ai {}
+impl<T> PrAdrAnalysis for T where T: Ai {}
+impl<T> PrBugAnalysis for T where T: Ai {}

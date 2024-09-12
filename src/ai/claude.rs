@@ -10,7 +10,7 @@ impl Ai for Claude {
     async fn make_request(system_input: &str, user_input: String) -> Result<String> {
         let base_url = config::get("ANTHROPIC_BASE_URL")?;
         let api_key = config::get("ANTHROPIC_API_KEY")?;
-        let model = config::get("ANTHROPIC_MODEL")?;
+        let model = config::get("CLAUDE_MODEL")?;
 
         let mut response = reqwest::Client::new()
             .post(format!("{base_url}/v1/messages"))

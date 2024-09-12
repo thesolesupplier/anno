@@ -52,7 +52,7 @@ jobs:
           ADR_REPO_FULL_NAME: The-Sole-Supplier/ADRs
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ANTHROPIC_BASE_URL: https://api.anthropic.com
-          ANTHROPIC_MODEL: claude-3-opus-20240229
+          CLAUDE_MODEL: claude-3-5-sonnet-20240620
           GITHUB_APP_ID: 952862
           GITHUB_APP_INSTALLATION_ID: 53127890
           GITHUB_APP_PRIVATE_KEY_BASE64: ${{ secrets.GH_APP_PRIVATE_KEY_BASE64 }}
@@ -61,11 +61,10 @@ jobs:
           GITHUB_WEBHOOK_SECRET: ${{ secrets.GH_WEBHOOK_SECRET }}
           JIRA_API_KEY: ${{ secrets.JIRA_API_KEY }}
           JIRA_BASE_URL: https://thesolesupplier.atlassian.net
-          LLM_PROVIDER: anthropic
           LOG_LEVEL: INFO
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_BASE_URL: https://api.openai.com/v1
-          OPENAI_MODEL: gpt-4o-2024-08-06
+          CHAT_GPT_MODEL: gpt-4o-2024-08-06
           REPOS_DIR: '/tmp/repos'
           SLACK_MESSAGE_ENABLED: true
           SLACK_WEBHOOK_URL: https://hooks.slack.com/services/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
