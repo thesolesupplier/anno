@@ -232,7 +232,21 @@ impl PullRequest {
             .text()
             .await?;
 
-        Ok(diff)
+        let mut is_inside_ignored_file = false;
+
+        let filtered_diff = diff
+            .lines()
+            .filter(|line| {
+                if line.contains("diff --git") {
+                    is_inside_ignored_file = line.contains("package-lock.json");
+                }
+
+                !is_inside_ignored_file
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        Ok(filtered_diff)
     }
 
     pub async fn add_comment(&self, comment: &str) -> Result<()> {
