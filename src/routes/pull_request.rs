@@ -21,6 +21,10 @@ pub async fn adr_analysis(
 
     tracing::info!("Processing '{}' pull request on '{}'", pr.title, repo.name);
 
+    if pr.user.is_bot() {
+        return Ok(StatusCode::OK);
+    }
+
     if action != "opened" {
         return Ok(StatusCode::OK);
     }
@@ -58,6 +62,10 @@ pub async fn bug_analysis(
     }): GithubEvent<PullRequestEvent>,
 ) -> Result<StatusCode, AppError> {
     tracing::info!("Processing '{}' pull request on '{}'", pr.title, repo.name);
+
+    if pr.user.is_bot() {
+        return Ok(StatusCode::OK);
+    }
 
     if action != "opened" && action != "synchronize" {
         return Ok(StatusCode::OK);

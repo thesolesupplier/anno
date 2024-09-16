@@ -213,6 +213,7 @@ pub struct PullRequest {
     pub head: Commit,
     pub base: Commit,
     pub body: Option<String>,
+    pub user: User,
     url: String,
     comments_url: String,
 }
@@ -353,6 +354,19 @@ impl Comment {
 #[derive(Deserialize)]
 pub struct User {
     id: i64,
+    r#type: UserType,
+}
+
+impl User {
+    pub fn is_bot(&self) -> bool {
+        matches!(self.r#type, UserType::Bot)
+    }
+}
+
+#[derive(Deserialize)]
+enum UserType {
+    User,
+    Bot,
 }
 
 #[derive(Deserialize)]
