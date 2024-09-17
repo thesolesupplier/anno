@@ -17,15 +17,15 @@ pub async fn adr_analysis(
         action,
     }): GithubEvent<PullRequestEvent>,
 ) -> Result<StatusCode, AppError> {
-    let adr_repo_full_name = config::get("ADR_REPO_FULL_NAME")?;
-
     tracing::info!("Processing '{}' pull request on '{}'", pr.title, repo.name);
+
+    let adr_repo_full_name = config::get("ADR_REPO_FULL_NAME")?;
 
     if pr.user.is_bot() {
         return Ok(StatusCode::OK);
     }
 
-    if action != "opened" {
+    if action != "opened" && action != "synchronize" {
         return Ok(StatusCode::OK);
     }
 

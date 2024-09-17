@@ -251,6 +251,15 @@ impl PullRequest {
     }
 
     pub async fn add_comment(&self, comment: &str) -> Result<()> {
+        let pr_comment_enabled = config::get("PR_COMMENT_ENABLED").is_ok_and(|v| v == "true");
+
+        if !pr_comment_enabled {
+            println!("------ PR COMMENT ------");
+            println!("{comment}");
+            println!("------------------------");
+            return Ok(());
+        }
+
         let gh_token = AccessToken::get().await?;
 
         reqwest::Client::new()
@@ -267,6 +276,12 @@ impl PullRequest {
     }
 
     pub async fn hide_outdated_comments(&self) -> Result<()> {
+        let pr_comment_enabled = config::get("PR_COMMENT_ENABLED").is_ok_and(|v| v == "true");
+
+        if !pr_comment_enabled {
+            return Ok(());
+        }
+
         let bot_comments: Vec<Comment> = self
             .get_comments()
             .await?
