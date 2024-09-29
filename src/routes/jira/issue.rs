@@ -13,6 +13,11 @@ pub async fn status(JiraEvent(event): JiraEvent<JiraIssueEvent>) -> Result<Statu
     }
 
     let issue_description = &event.issue.fields.description;
+
+    if issue_description.is_empty() {
+        return Ok(StatusCode::OK);
+    }
+
     let issue_comments = event.issue.get_user_comments().await?;
 
     let test_cases = ChatGpt::get_test_cases(issue_description, &issue_comments).await?;
