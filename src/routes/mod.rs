@@ -1,2 +1,2 @@
-pub mod pull_request;
-pub mod workflow;
+pub mod github;
+pub mod jira;

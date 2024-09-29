@@ -1,6 +1,6 @@
 # **Anno**
 
-Anno is a serverless Rust application that leverages GitHub webhook events and AI to review PRs and summarise code changes released in production deployments.
+Anno is a serverless Rust application that leverages GitHub webhook events and AI to review PRs and summarise code changes released in deployments.
 
 ## **Local Development**
 

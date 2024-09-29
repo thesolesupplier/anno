@@ -329,7 +329,7 @@ pub struct Comment {
 
 impl Comment {
     pub fn is_by_anno_bot(&self) -> bool {
-        let bot_user_id = config::get("GITHUB_BOT_USER_ID").expect("GITHUB_BOT_USER_ID to be set");
+        let bot_user_id = config::get("GITHUB_BOT_USER_ID").unwrap();
 
         self.user.id.to_string() == bot_user_id
     }

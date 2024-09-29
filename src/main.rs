@@ -35,15 +35,20 @@ async fn main() {
         .allow_origin(tower_http::cors::Any);
 
     let app = Router::new()
-        .route(
-            "/pull-request/adr",
-            post(routes::pull_request::adr_analysis),
+        .route("/jira/issue/:key/status", post(routes::jira::issue::status))
+        .nest(
+            "/github",
+            Router::new()
+                .route(
+                    "/pull-request/adr",
+                    post(routes::github::pull_request::adr_analysis),
+                )
+                .route(
+                    "/pull-request/bugs",
+                    post(routes::github::pull_request::bug_analysis),
+                )
+                .route("/workflow", post(routes::github::workflow::release_summary)),
         )
-        .route(
-            "/pull-request/bugs",
-            post(routes::pull_request::bug_analysis),
-        )
-        .route("/workflow", post(routes::workflow::release_summary))
         .layer(cors_layer)
         .layer(TraceLayer::new_for_http())
         .layer(CompressionLayer::new().gzip(true).deflate(true));
