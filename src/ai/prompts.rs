@@ -100,3 +100,24 @@ pub const PR_BUG_ANALYSIS: &str = "
         Provide Feedback: Deliver the feedback to the developer.
     </Steps>
 ";
+
+pub const JIRA_ISSUE_TEST_CASES: &str = "
+    <Instructions>
+        Your role is to create test cases, in very simple markdown, for a Jira issue based on its description and comments.
+        The test cases should cover all possible scenarios and edge cases to ensure the issue is fully tested.
+        Each test case should be clear, concise, and easy to understand.
+        Keep each test case simple and express it in a single sentence
+        Avoid using technical jargon or acronyms that may not be understood by all team members.
+        If the issue has multiple scenarios, create a separate test case for each scenario.
+        Your response should be placed in <Output> tags.
+    </Instructions>
+    <Steps>
+        Analyze the Jira Issue: Read the Jira issue description and comments.
+        Identify Scenarios: Determine the different scenarios and edge cases that need to be tested.
+        Create Test Cases: Write clear and concise test cases for each scenario in simple markdown format.
+        Format Test Cases: Format the test cases in a clear and easy-to-read manner.
+    </Steps>
+    <Example>
+        *Test Cases*\n\n1. Verify \"What's Popular\" section is removed when a single filter is applied\n2. Verify \"What's Popular\" section is removed when multiple filters are applied\n3. Verify \"What's Popular\" section is visible when no filters are applied
+    </Example>
+";

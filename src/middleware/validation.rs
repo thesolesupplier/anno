@@ -1,3 +1,4 @@
+use crate::utils::config;
 use axum::{
     async_trait,
     body::Bytes,
@@ -8,8 +9,6 @@ use hyper::StatusCode;
 use serde::de::DeserializeOwned;
 use subtle::ConstantTimeEq;
 
-use crate::utils::config;
-
 pub struct GithubEvent<T>(pub T);
 
 #[async_trait]
@@ -18,7 +17,7 @@ where
     S: Send + Sync,
     T: DeserializeOwned,
 {
-    type Rejection = (StatusCode, String);
+    type Rejection = (StatusCode, &'static str);
 
     async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
         let validate = config::get("WEBHOOK_VALIDATION").is_ok_and(|v| v == "true");
@@ -32,41 +31,85 @@ where
 
         let token = config::get("GITHUB_WEBHOOK_SECRET").unwrap();
 
-        let signature_sha256 = req
-            .headers()
-            .get("X-Hub-Signature-256")
-            .and_then(|v| v.to_str().ok())
-            .ok_or(Response::BadRequest("Signature missing"))?
-            .strip_prefix("sha256=")
-            .ok_or(Response::BadRequest("Signature prefix missing"))?;
+        let body = validate_body("X-Hub-Signature-256", req, state, token)
+            .await
+            .map_err(Response::BadRequest)?;
 
-        let signature = hex::decode(signature_sha256)
-            .map_err(|_| Response::BadRequest("Signature malformed"))?;
+        Ok(GithubEvent(body))
+    }
+}
 
-        let body = read_body_as_bytes(req, state).await?;
+pub struct JiraEvent<T>(pub T);
 
-        let mac = HMAC::mac(&body, token.as_bytes());
+#[async_trait]
+impl<T, S> FromRequest<S> for JiraEvent<T>
+where
+    S: Send + Sync,
+    T: DeserializeOwned,
+{
+    type Rejection = (StatusCode, &'static str);
 
-        if mac.ct_ne(&signature).into() {
-            return Err(Response::BadRequest("Signature mismatch"));
+    async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
+        let validate = config::get("WEBHOOK_VALIDATION").is_ok_and(|v| v == "true");
+
+        if !validate {
+            let body = read_body_as_bytes(req, state).await?;
+            let value = deseralise_body(body)?;
+
+            return Ok(JiraEvent(value));
         }
 
-        let value = deseralise_body(body)?;
+        let token = config::get("JIRA_WEBHOOK_SECRET").unwrap();
 
-        Ok(GithubEvent(value))
+        let body = validate_body("x-hub-signature", req, state, token)
+            .await
+            .map_err(Response::BadRequest)?;
+
+        Ok(JiraEvent(body))
     }
+}
+
+async fn validate_body<S: Send + Sync, T: DeserializeOwned>(
+    header_name: &'static str,
+    req: Request,
+    state: &S,
+    token: String,
+) -> Result<T, &'static str> {
+    let signature_sha256 = req
+        .headers()
+        .get(header_name)
+        .and_then(|v| v.to_str().ok())
+        .ok_or("Signature missing")?
+        .strip_prefix("sha256=")
+        .ok_or("Signature prefix missing")?;
+
+    let signature = hex::decode(signature_sha256).map_err(|_| "Signature malformed")?;
+
+    let body = read_body_as_bytes(req, state)
+        .await
+        .map_err(|_| "Unable to read body")?;
+
+    let mac = HMAC::mac(&body, token.as_bytes());
+
+    if mac.ct_ne(&signature).into() {
+        return Err("Signature mismatch");
+    }
+
+    let value = deseralise_body(body).map_err(|_| "Error deserialising body")?;
+
+    Ok(value)
 }
 
 async fn read_body_as_bytes<S: Send + Sync>(
     req: Request,
     state: &S,
-) -> Result<Bytes, (StatusCode, String)> {
+) -> Result<Bytes, (StatusCode, &'static str)> {
     Bytes::from_request(req, state)
         .await
         .map_err(|_| Response::BadRequest("Error reading body"))
 }
 
-fn deseralise_body<T>(body: Bytes) -> Result<T, (StatusCode, String)>
+fn deseralise_body<T>(body: Bytes) -> Result<T, (StatusCode, &'static str)>
 where
     T: DeserializeOwned,
 {
@@ -81,7 +124,7 @@ struct Response;
 
 impl Response {
     #[allow(non_snake_case)]
-    pub fn BadRequest(msg: &'static str) -> (StatusCode, String) {
-        (StatusCode::BAD_REQUEST, msg.to_string())
+    pub fn BadRequest(msg: &'static str) -> (StatusCode, &'static str) {
+        (StatusCode::BAD_REQUEST, msg)
     }
 }

@@ -2,6 +2,7 @@ mod chat_gpt;
 mod claude;
 mod prompts;
 
+use crate::services::jira::IssueComment;
 use anyhow::Result;
 pub use chat_gpt::ChatGpt;
 pub use claude::Claude;
@@ -88,6 +89,26 @@ pub trait PrAdrAnalysis: Ai {
     }
 }
 
+pub trait IssueTestCasing: Ai {
+    async fn get_test_cases(
+        issue_description: &str,
+        user_comments: &[IssueComment],
+    ) -> Result<String> {
+        tracing::info!("Fetching AI Jira issue test cases");
+
+        let comments = user_comments.iter().fold(String::new(), |acc, c| {
+            acc + "Author" + &c.author.display_name + "\nComment" + &c.body + "\n--"
+        });
+
+        let user_prompt = format!(
+            "<IssueDescription>{issue_description}</IssueDescription>
+            <Comments>{comments}</Comments>"
+        );
+
+        Self::prompt(prompts::JIRA_ISSUE_TEST_CASES, user_prompt).await
+    }
+}
+
 pub struct PrAnalysisInput<'a> {
     pub diff: &'a str,
     pub adrs: &'a [String],
@@ -98,3 +119,4 @@ pub struct PrAnalysisInput<'a> {
 impl<T> ReleaseSummary for T where T: Ai {}
 impl<T> PrAdrAnalysis for T where T: Ai {}
 impl<T> PrBugAnalysis for T where T: Ai {}
+impl<T> IssueTestCasing for T where T: Ai {}
