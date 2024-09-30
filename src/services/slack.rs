@@ -70,7 +70,8 @@ pub async fn post_release_message(
         .json(&json!({"blocks": json!(message_blocks)}))
         .send()
         .await?
-        .error_for_status()?;
+        .error_for_status()
+        .inspect_err(|e| tracing::error!("Error posting Slack message: {e}"))?;
 
     Ok(())
 }

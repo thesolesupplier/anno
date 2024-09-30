@@ -26,6 +26,8 @@ impl Issue {
         {
             Ok(res) => res,
             Err(err) => {
+                tracing::error!("Error getting Jira issue: {err}");
+
                 if err.status() == Some(reqwest::StatusCode::NOT_FOUND) {
                     return Ok(None);
                 } else {
@@ -67,7 +69,8 @@ impl Issue {
             .json(&json!({ "body": body }))
             .send()
             .await?
-            .error_for_status()?;
+            .error_for_status()
+            .inspect_err(|e| tracing::error!("Error adding Jira comment: {e}"))?;
 
         Ok(())
     }
@@ -99,7 +102,9 @@ impl Issue {
 
         let hide_requests: Vec<_> = bot_comments.iter().map(|c| c.delete()).collect();
 
-        try_join_all(hide_requests).await?;
+        try_join_all(hide_requests)
+            .await
+            .inspect_err(|e| tracing::error!("Error deleting Jira comments: {e}"))?;
 
         Ok(())
     }
@@ -117,7 +122,8 @@ impl Issue {
             .header("Authorization", format!("Basic {jira_api_key}"))
             .send()
             .await?
-            .error_for_status()?
+            .error_for_status()
+            .inspect_err(|e| tracing::error!("Error getting Jira comments: {e}"))?
             .json::<CommentsResponse>()
             .await?
             .comments;
@@ -149,7 +155,8 @@ impl IssueComment {
             .header("Authorization", format!("Basic {jira_api_key}"))
             .send()
             .await?
-            .error_for_status()?;
+            .error_for_status()
+            .inspect_err(|e| tracing::error!("Error deleting Jira comment: {e}"))?;
 
         Ok(())
     }

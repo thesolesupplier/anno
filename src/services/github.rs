@@ -79,7 +79,8 @@ impl WorkflowRun {
             .header("User-Agent", "Anno")
             .send()
             .await?
-            .error_for_status()?
+            .error_for_status()
+            .inspect_err(|e| tracing::error!("Error getting previous workflow attempt: {e}"))?
             .json::<WorkflowRun>()
             .await?;
 
@@ -152,7 +153,8 @@ impl WorkflowRuns {
             ])
             .send()
             .await?
-            .error_for_status()?
+            .error_for_status()
+            .inspect_err(|e| tracing::error!("Error getting previous workflow runs: {e}"))?
             .json::<Self>()
             .await?;
 
@@ -184,6 +186,8 @@ impl Repository {
         {
             Ok(res) => res,
             Err(err) => {
+                tracing::error!("Error getting PR: {err}");
+
                 if err.status() == Some(reqwest::StatusCode::NOT_FOUND) {
                     return Ok(None);
                 } else {
@@ -229,7 +233,8 @@ impl PullRequest {
             .header("User-Agent", "Anno")
             .send()
             .await?
-            .error_for_status()?
+            .error_for_status()
+            .inspect_err(|e| tracing::error!("Error fetching PR diff: {e}"))?
             .text()
             .await?;
 
@@ -270,7 +275,8 @@ impl PullRequest {
             .json(&json!({ "body": comment }))
             .send()
             .await?
-            .error_for_status()?;
+            .error_for_status()
+            .inspect_err(|e| tracing::error!("Error adding GitHub comment: {e}"))?;
 
         Ok(())
     }
@@ -307,7 +313,8 @@ impl PullRequest {
             .query(&[("per_page", "100")])
             .send()
             .await?
-            .error_for_status()?
+            .error_for_status()
+            .inspect_err(|e| tracing::error!("Error getting GitHub comments: {e}"))?
             .json::<Vec<Comment>>()
             .await?;
 
@@ -360,7 +367,8 @@ impl Comment {
             .json(&json!({ "query": mutation }))
             .send()
             .await?
-            .error_for_status()?;
+            .error_for_status()
+            .inspect_err(|e| tracing::error!("Error hiding GitHub comment: {e}"))?;
 
         Ok(())
     }
@@ -408,7 +416,8 @@ impl AccessToken {
             .header("User-Agent", "Anno")
             .send()
             .await?
-            .error_for_status()?
+            .error_for_status()
+            .inspect_err(|e| tracing::error!("Error fetching GitHub access token: {e}"))?
             .json::<Self>()
             .await?
             .token;
