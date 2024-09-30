@@ -27,7 +27,8 @@ impl Ai for ChatGpt {
             }))
             .send()
             .await?
-            .error_for_status()?
+            .error_for_status()
+            .inspect_err(|e| tracing::error!("Error making ChatGPT request: {e}"))?
             .json::<ApiResponse>()
             .await?;
 

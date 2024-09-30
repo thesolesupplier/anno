@@ -26,7 +26,8 @@ impl Ai for Claude {
             }))
             .send()
             .await?
-            .error_for_status()?
+            .error_for_status()
+            .inspect_err(|e| tracing::error!("Error making Claude request: {e}"))?
             .json::<ApiResponse>()
             .await?;
 
