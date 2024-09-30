@@ -155,13 +155,16 @@ impl IssueComment {
     }
 
     pub fn is_by_anno_bot(&self) -> bool {
-        self.author.display_name == "Annobot"
+        let jira_bot_user_id = config::get("JIRA_BOT_USER_ID").unwrap();
+
+        self.author.account_id == jira_bot_user_id
     }
 }
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CommentAuthor {
+    pub account_id: String,
     pub display_name: String,
 }
 

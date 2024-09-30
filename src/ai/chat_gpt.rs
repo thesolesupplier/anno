@@ -19,7 +19,6 @@ impl Ai for ChatGpt {
             .json(&json!({
                 "model": model,
                 "temperature": 0.0,
-                "frequency_penalty": 2.0,
                 "messages": [
                     { "role": "system", "content": system_input },
                     { "role": "user", "content": user_input }
