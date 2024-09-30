@@ -3,6 +3,7 @@ use axum::{
     async_trait,
     body::Bytes,
     extract::{FromRequest, Request},
+    http::HeaderValue,
 };
 use hmac_sha256::HMAC;
 use hyper::StatusCode;
@@ -22,20 +23,17 @@ where
     async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
         let validate = config::get("WEBHOOK_VALIDATION").is_ok_and(|v| v == "true");
 
-        if !validate {
-            let body = read_body_as_bytes(req, state).await?;
-            let value = deseralise_body(body)?;
+        let signature = req.headers().get("X-Hub-Signature-256").cloned();
+        let body = convert_body_to_bytes(req, state).await?;
 
-            return Ok(GithubEvent(value));
+        if validate {
+            let token = config::get("GITHUB_WEBHOOK_SECRET").unwrap();
+            validate_body(signature, &body, token).await?;
         }
 
-        let token = config::get("GITHUB_WEBHOOK_SECRET").unwrap();
+        let value = deseralise_body(body)?;
 
-        let body = validate_body("X-Hub-Signature-256", req, state, token)
-            .await
-            .map_err(Response::BadRequest)?;
-
-        Ok(GithubEvent(body))
+        Ok(GithubEvent(value))
     }
 }
 
@@ -52,61 +50,55 @@ where
     async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
         let validate = config::get("WEBHOOK_VALIDATION").is_ok_and(|v| v == "true");
 
-        if !validate {
-            let body = read_body_as_bytes(req, state).await?;
-            let value = deseralise_body(body)?;
+        let signature = req.headers().get("x-hub-signature").cloned();
+        let body = convert_body_to_bytes(req, state).await?;
 
-            return Ok(JiraEvent(value));
+        if validate {
+            let token = config::get("JIRA_WEBHOOK_SECRET").unwrap();
+            validate_body(signature, &body, token).await?;
         }
 
-        let token = config::get("JIRA_WEBHOOK_SECRET").unwrap();
+        let value = deseralise_body(body)?;
 
-        let body = validate_body("x-hub-signature", req, state, token)
-            .await
-            .map_err(Response::BadRequest)?;
-
-        Ok(JiraEvent(body))
+        Ok(JiraEvent(value))
     }
 }
 
-async fn validate_body<S: Send + Sync, T: DeserializeOwned>(
-    header_name: &'static str,
-    req: Request,
-    state: &S,
+async fn validate_body(
+    signature_header: Option<HeaderValue>,
+    body: &Bytes,
     token: String,
-) -> Result<T, &'static str> {
-    let signature_sha256 = req
-        .headers()
-        .get(header_name)
-        .and_then(|v| v.to_str().ok())
-        .ok_or("Signature missing")?
+) -> Result<(), (StatusCode, &'static str)> {
+    let signature = signature_header.ok_or(Response::BadRequest("Signature missing"))?;
+
+    let signature = signature
+        .to_str()
+        .map_err(|_| Response::BadRequest("Signature malformed"))?
         .strip_prefix("sha256=")
-        .ok_or("Signature prefix missing")?;
+        .ok_or(Response::BadRequest("Signature prefix missing"))?;
 
-    let signature = hex::decode(signature_sha256).map_err(|_| "Signature malformed")?;
+    let signature = hex::decode(signature).map_err(|err| {
+        tracing::error!("Error decoding signature: ${err}");
+        Response::BadRequest("Signature malformed")
+    })?;
 
-    let body = read_body_as_bytes(req, state)
-        .await
-        .map_err(|_| "Unable to read body")?;
-
-    let mac = HMAC::mac(&body, token.as_bytes());
+    let mac = HMAC::mac(body, token.as_bytes());
 
     if mac.ct_ne(&signature).into() {
-        return Err("Signature mismatch");
+        return Err(Response::BadRequest("Signature mismatch"));
     }
 
-    let value = deseralise_body(body).map_err(|_| "Error deserialising body")?;
-
-    Ok(value)
+    Ok(())
 }
 
-async fn read_body_as_bytes<S: Send + Sync>(
+async fn convert_body_to_bytes<S: Send + Sync>(
     req: Request,
     state: &S,
 ) -> Result<Bytes, (StatusCode, &'static str)> {
-    Bytes::from_request(req, state)
-        .await
-        .map_err(|_| Response::BadRequest("Error reading body"))
+    Bytes::from_request(req, state).await.map_err(|err| {
+        tracing::error!("Error converting body to bytes: ${err}");
+        Response::BadRequest("Error reading body")
+    })
 }
 
 fn deseralise_body<T>(body: Bytes) -> Result<T, (StatusCode, &'static str)>
@@ -114,8 +106,10 @@ where
     T: DeserializeOwned,
 {
     let deserializer = &mut serde_json::Deserializer::from_slice(&body);
-    let value = serde_path_to_error::deserialize(deserializer)
-        .map_err(|_| Response::BadRequest("Error deserialising body"))?;
+    let value = serde_path_to_error::deserialize(deserializer).map_err(|err| {
+        tracing::error!("Error deserialising body: ${err}");
+        Response::BadRequest("Error deserialising body")
+    })?;
 
     Ok(value)
 }
