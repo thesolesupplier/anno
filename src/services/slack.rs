@@ -209,6 +209,14 @@ fn get_actions_block(run: &WorkflowRun, prev_run: &WorkflowRun) -> serde_json::V
                     "text": "Diff",
                 },
                 "url": run.repository.get_compare_url(&prev_run.head_sha, &run.head_sha)
+            },
+            {
+                "type": "button",
+                "text": {
+                    "type": "plain_text",
+                    "text": "Rollback",
+                },
+                "url": prev_run.get_run_url()
             }
         ]
     })
