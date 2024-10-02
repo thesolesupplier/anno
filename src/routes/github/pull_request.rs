@@ -41,7 +41,7 @@ pub async fn adr_analysis(
     let adr_repo = Git::init(&adr_repo_full_name, None).await?;
     let adrs = adr_repo.get_contents()?;
 
-    let analysis = ai::Claude::get_pr_adr_analysis(ai::PrAnalysisInput {
+    let analysis = ai::Claude::get_pr_adr_analysis(ai::PrAdrAnalysisInput {
         diff: &diff,
         adrs: &adrs,
         commit_messages: &commit_messages,

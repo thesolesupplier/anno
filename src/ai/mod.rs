@@ -63,12 +63,12 @@ pub trait PrBugAnalysis: Ai {
 
 pub trait PrAdrAnalysis: Ai {
     async fn get_pr_adr_analysis(
-        PrAnalysisInput {
+        PrAdrAnalysisInput {
             diff,
             adrs,
             commit_messages,
             pr_body,
-        }: PrAnalysisInput<'_>,
+        }: PrAdrAnalysisInput<'_>,
     ) -> Result<String> {
         tracing::info!("Fetching AI PR ADR analysis");
 
@@ -109,7 +109,7 @@ pub trait IssueTestCasing: Ai {
     }
 }
 
-pub struct PrAnalysisInput<'a> {
+pub struct PrAdrAnalysisInput<'a> {
     pub diff: &'a str,
     pub adrs: &'a [String],
     pub commit_messages: &'a [String],
