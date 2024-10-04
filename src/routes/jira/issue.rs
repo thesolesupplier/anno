@@ -8,7 +8,7 @@ use hyper::StatusCode;
 use serde::Deserialize;
 
 pub async fn status(JiraEvent(event): JiraEvent<JiraIssueEvent>) -> Result<StatusCode, AppError> {
-    if !event.is_in_status_for_test_cases() {
+    if !event.should_trigger_test_cases() {
         return Ok(StatusCode::OK);
     }
 
@@ -35,11 +35,11 @@ pub struct JiraIssueEvent {
 }
 
 impl JiraIssueEvent {
-    pub fn is_in_status_for_test_cases(&self) -> bool {
+    pub fn should_trigger_test_cases(&self) -> bool {
         self.changelog
             .items
             .iter()
-            .any(|i| i.is_review_status() || i.is_refinement_status())
+            .any(|i| i.is_to_refinement_status() || i.is_to_review_status())
     }
 }
 
@@ -56,21 +56,20 @@ pub struct JiraChangeLogItem {
 }
 
 impl JiraChangeLogItem {
-    pub fn is_review_status(&self) -> bool {
-        self.field == "status"
-            && self
-                .to_string
-                .as_ref()
-                .map(|s| s == "Review & Estimate")
-                .unwrap_or(false)
+    pub fn is_to_refinement_status(&self) -> bool {
+        self.is_to_status("In Refinement")
     }
 
-    pub fn is_refinement_status(&self) -> bool {
+    pub fn is_to_review_status(&self) -> bool {
+        self.is_to_status("Review & Estimate")
+    }
+
+    fn is_to_status(&self, status: &str) -> bool {
         self.field == "status"
             && self
                 .to_string
                 .as_ref()
-                .map(|s| s == "In Refinement")
+                .map(|s| s == status)
                 .unwrap_or(false)
     }
 }
