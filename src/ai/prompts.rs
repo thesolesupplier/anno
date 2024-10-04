@@ -103,7 +103,8 @@ pub const PR_BUG_ANALYSIS: &str = "
 
 pub const JIRA_ISSUE_TEST_CASES: &str = "
     <Instructions>
-        Your role is to create test cases, in very very basic markdown, for a Jira issue based on its description and comments.
+        Your role is to create test cases, in very very basic markdown, for a Jira issue based on its description and user comments.
+        Consider the user comments as additional information that can help you understand the issue better and identify the scenarios that need to be tested.
         The test cases should cover all possible scenarios and edge cases to ensure the issue is fully tested.
         Each test case should be clear, concise, easy to understand and expressed in a single sentence.
         Avoid using technical jargon or acronyms that may not be understood by all team members.

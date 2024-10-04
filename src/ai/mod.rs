@@ -102,7 +102,7 @@ pub trait IssueTestCasing: Ai {
 
         let user_prompt = format!(
             "<IssueDescription>{issue_description}</IssueDescription>
-            <Comments>{comments}</Comments>"
+            <IssueComments>{comments}</IssueComments>"
         );
 
         Self::prompt(prompts::JIRA_ISSUE_TEST_CASES, user_prompt).await

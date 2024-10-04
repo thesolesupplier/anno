@@ -8,7 +8,7 @@ use hyper::StatusCode;
 use serde::Deserialize;
 
 pub async fn status(JiraEvent(event): JiraEvent<JiraIssueEvent>) -> Result<StatusCode, AppError> {
-    if !event.is_move_to_review_status() {
+    if !event.is_in_status_for_test_cases() {
         return Ok(StatusCode::OK);
     }
 
@@ -35,8 +35,11 @@ pub struct JiraIssueEvent {
 }
 
 impl JiraIssueEvent {
-    pub fn is_move_to_review_status(&self) -> bool {
-        self.changelog.items.iter().any(|i| i.is_review_status())
+    pub fn is_in_status_for_test_cases(&self) -> bool {
+        self.changelog
+            .items
+            .iter()
+            .any(|i| i.is_review_status() || i.is_refinement_status())
     }
 }
 
@@ -59,6 +62,15 @@ impl JiraChangeLogItem {
                 .to_string
                 .as_ref()
                 .map(|s| s == "Review & Estimate")
+                .unwrap_or(false)
+    }
+
+    pub fn is_refinement_status(&self) -> bool {
+        self.field == "status"
+            && self
+                .to_string
+                .as_ref()
+                .map(|s| s == "In Refinement")
                 .unwrap_or(false)
     }
 }
