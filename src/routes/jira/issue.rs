@@ -53,21 +53,31 @@ pub struct JiraChangeLog {
 pub struct JiraChangeLogItem {
     field: String,
     to_string: Option<String>,
+    from_string: Option<String>,
 }
 
 impl JiraChangeLogItem {
     pub fn is_to_refinement_status(&self) -> bool {
-        self.is_to_status("In Refinement")
+        !self.is_from_status("Review & Estimate") && self.is_to_status("In Refinement")
     }
 
     pub fn is_to_review_status(&self) -> bool {
-        self.is_to_status("Review & Estimate")
+        !self.is_from_status("Holding Bay") && self.is_to_status("Review & Estimate")
     }
 
     fn is_to_status(&self, status: &str) -> bool {
         self.field == "status"
             && self
                 .to_string
+                .as_ref()
+                .map(|s| s == status)
+                .unwrap_or(false)
+    }
+
+    fn is_from_status(&self, status: &str) -> bool {
+        self.field == "status"
+            && self
+                .from_string
                 .as_ref()
                 .map(|s| s == status)
                 .unwrap_or(false)
