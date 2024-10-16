@@ -1,7 +1,11 @@
+use std::borrow::Cow;
+
 use crate::utils::{config, error::AppError, jwt};
 use anyhow::Result;
+use chrono::{DateTime, Duration, SecondsFormat};
 use futures::future::try_join_all;
-use serde::Deserialize;
+use regex_lite::Regex;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tokio::sync::OnceCell;
 
@@ -13,6 +17,7 @@ pub struct WorkflowRun {
     pub head_sha: String,
     pub repository: Repository,
     pub actor: Actor,
+    pub head_commit: WorkflowRunCommit,
     created_at: String,
     conclusion: Option<String>,
     head_branch: String,
@@ -167,6 +172,8 @@ pub struct Repository {
     pub full_name: String,
     pub name: String,
     pulls_url: String,
+    compare_url: String,
+    commits_url: String,
 }
 
 impl Repository {
@@ -201,12 +208,208 @@ impl Repository {
         Ok(Some(pull_request))
     }
 
+    pub async fn fetch_diff(
+        &self,
+        old_sha: &str,
+        new_sha: &str,
+        app_name: Option<&str>,
+    ) -> Result<String> {
+        let gh_token = AccessToken::get().await?;
+
+        let url = self
+            .compare_url
+            .replace("{base}...{head}", &format!("{old_sha}...{new_sha}"));
+
+        let diff = reqwest::Client::new()
+            .get(url)
+            .bearer_auth(gh_token)
+            .header("Accept", "application/vnd.github.diff")
+            .header("User-Agent", "Anno")
+            .send()
+            .await?
+            .error_for_status()
+            .inspect_err(|e| tracing::error!("Error fetching repo diff: {e}"))?
+            .text()
+            .await?;
+
+        let mut is_inside_ignored_file = false;
+
+        let filtered_diff = diff
+            .lines()
+            .filter(|line| {
+                if line.contains("diff --git") {
+                    is_inside_ignored_file = line.contains("package-lock.json")
+                        || app_name.map_or(false, |name| {
+                            !line.contains(&format!("/{}/", name.to_lowercase()))
+                        });
+                }
+
+                !is_inside_ignored_file
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        Ok(filtered_diff)
+    }
+
+    pub async fn fetch_commit_messages_in_range(
+        &self,
+        (from, to): (&str, &str),
+        app_name: Option<&str>,
+    ) -> Result<Vec<String>> {
+        let since = increment_one_second(from)?;
+
+        let mut query = Vec::from([
+            ("since", Cow::Borrowed(since.as_str())),
+            ("until", Cow::Borrowed(to)),
+        ]);
+
+        if let Some(app_name) = app_name {
+            query.push((
+                "path",
+                Cow::Owned(format!("apps/{}", app_name.to_lowercase())),
+            ));
+        }
+
+        let mut messages = self
+            .list_commits(&query)
+            .await?
+            .into_iter()
+            .map(|c| c.commit.message)
+            .collect();
+
+        let Some(app_name) = app_name else {
+            return Ok(messages);
+        };
+
+        let pr_merge_commits: Vec<Commit> = self
+            .list_commits(&[("since", since.as_str()), ("until", to)])
+            .await?
+            .into_iter()
+            .filter(|c| c.commit.message.starts_with("Merge pull request"))
+            .collect();
+
+        let pr_regex = Regex::new(r"#(\d+)").unwrap();
+
+        for commit in &pr_merge_commits {
+            if let Some(pr_number) = pr_regex
+                .captures(&commit.commit.message)
+                .and_then(|c| Some(c.get(1)?.as_str()))
+            {
+                if self
+                    .get_pull_request_files(pr_number)
+                    .await?
+                    .iter()
+                    .any(|f| f.filename.contains(&app_name.to_lowercase()))
+                {
+                    messages.push(commit.commit.message.clone());
+                }
+            }
+        }
+
+        Ok(messages)
+    }
+
+    async fn list_commits<T: Serialize + ?Sized>(&self, query: &T) -> Result<Vec<Commit>> {
+        let gh_token = AccessToken::get().await?;
+
+        let url = self.commits_url.replace("{/sha}", "");
+
+        let mut all_commits: Vec<Commit> = Vec::new();
+        let mut page = 1;
+        loop {
+            let commits: Vec<Commit> = reqwest::Client::new()
+                .get(&url)
+                .bearer_auth(gh_token)
+                .header("Accept", "application/json")
+                .header("User-Agent", "Anno")
+                .query(query)
+                .query(&[("page", page)])
+                .send()
+                .await?
+                .error_for_status()
+                .inspect_err(|e| tracing::error!("Error listing commits: {e}"))?
+                .json()
+                .await?;
+
+            if commits.is_empty() {
+                break;
+            }
+
+            all_commits.extend(commits);
+
+            page += 1;
+        }
+
+        Ok(all_commits)
+    }
+
     pub fn get_compare_url(&self, old_sha: &str, new_sha: &str) -> String {
         format!(
             "https://github.com/{}/compare/{}...{}",
             self.full_name, old_sha, new_sha
         )
     }
+
+    async fn get_pull_request_files(&self, id: &str) -> Result<Vec<PullRequestFile>> {
+        let gh_token = AccessToken::get().await?;
+
+        let url = self.pulls_url.replace("{/number}", &format!("/{id}/files"));
+
+        let mut all_files: Vec<PullRequestFile> = Vec::new();
+        let mut page = 1;
+
+        loop {
+            let files: Vec<PullRequestFile> = reqwest::Client::new()
+                .get(&url)
+                .bearer_auth(gh_token)
+                .header("Accept", "application/json")
+                .header("User-Agent", "Anno")
+                .query(&[("page", page)])
+                .send()
+                .await?
+                .error_for_status()
+                .inspect_err(|e| tracing::error!("Error fetching pull request files: {e}"))?
+                .json()
+                .await?;
+
+            if files.is_empty() {
+                break;
+            }
+
+            all_files.extend(files);
+
+            page += 1;
+        }
+
+        Ok(all_files)
+    }
+}
+
+fn increment_one_second(date: &str) -> Result<String> {
+    let new_datetime = DateTime::parse_from_rfc3339(date)? + Duration::seconds(1);
+
+    Ok(new_datetime.to_rfc3339_opts(SecondsFormat::Secs, true))
+}
+
+#[derive(Deserialize)]
+struct PullRequestFile {
+    filename: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Commit {
+    pub commit: CommitDetails,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct CommitDetails {
+    pub message: String,
+}
+
+#[derive(Deserialize)]
+pub struct WorkflowRunCommit {
+    pub timestamp: String,
 }
 
 #[derive(Deserialize)]
@@ -214,8 +417,8 @@ pub struct PullRequest {
     pub number: u64,
     pub title: String,
     pub html_url: String,
-    pub head: Commit,
-    pub base: Commit,
+    pub head: PullRequestCommit,
+    pub base: PullRequestCommit,
     pub body: Option<String>,
     pub user: User,
     url: String,
@@ -323,7 +526,7 @@ impl PullRequest {
 }
 
 #[derive(Deserialize)]
-pub struct Commit {
+pub struct PullRequestCommit {
     pub r#ref: String,
     pub sha: String,
 }
