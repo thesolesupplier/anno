@@ -10,6 +10,7 @@ use crate::{
 };
 use anyhow::Result;
 use axum::extract::Query;
+use chrono::{DateTime, Duration, SecondsFormat};
 use futures::future::try_join_all;
 use hyper::StatusCode;
 use regex_lite::Regex;
@@ -43,7 +44,7 @@ pub async fn release_summary(
         .fetch_diff(old_commit, new_commit, app_name)
         .await?;
 
-    let from = &prev_run.head_commit.timestamp;
+    let from = &increment_by_one_second(&prev_run.head_commit.timestamp)?;
     let to = &run.head_commit.timestamp;
 
     let commit_messages = run
@@ -129,4 +130,10 @@ async fn get_pull_requests<'a>(
         .collect();
 
     Ok(pull_requests)
+}
+
+fn increment_by_one_second(date: &str) -> Result<String> {
+    let new_datetime = DateTime::parse_from_rfc3339(date)? + Duration::seconds(1);
+
+    Ok(new_datetime.to_rfc3339_opts(SecondsFormat::Secs, true))
 }

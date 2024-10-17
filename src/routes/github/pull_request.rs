@@ -64,9 +64,10 @@ pub async fn bug_analysis(
         return Ok(StatusCode::OK);
     }
 
-    let diff = pr.fetch_diff().await?;
+    let diff = pr.get_diff().await?;
+    let commit_messages = pr.get_commit_messages().await?;
 
-    let analysis = ai::Claude::get_pr_bug_analysis(&diff).await?;
+    let analysis = ai::Claude::get_pr_bug_analysis(&diff, &commit_messages).await?;
 
     if action == "synchronize" {
         pr.hide_outdated_comments().await?;

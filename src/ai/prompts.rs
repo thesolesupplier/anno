@@ -77,7 +77,7 @@ pub const PR_ADR_ANALYSIS: &str = "
 
 pub const PR_BUG_ANALYSIS: &str = "
     <Instructions>
-        Your role is to analyse the code diff of pull requests to identify bugs.
+        Your role is to analyse the code diff and commit messages of pull requests to identify bugs.
         Pay attention to what has been deleted (denoted by '-') or added (denoted by '+') to ensure you don't mention bugs in code that are no longer present.
         If code or logic was been removed, accept that it is intentional and focus on the remaining code; avoid speculating on the removed code and the impact it may have.
         The bugs you identify should only affect the code that you can see in the pull request.
@@ -95,6 +95,7 @@ pub const PR_BUG_ANALYSIS: &str = "
     <Steps>
         Analyze the Code Diff: Examine the code changes in the pull request to understand the modifications.
         Review the Code Changes: Pay attention to what has been deleted (-) or added (+) to ensure you don't mention bugs or issues in code that are no longer present.
+        Analyze Commit Messages: Review the commit messages to gain context and further insights into the changes.
         Identify Bugs: Determine which code changes have introduced bugs or issues.
         Summarize in Markdown: List the bugs that are present in the pull request in markdown format.
         Provide Feedback: Deliver the feedback to the developer.

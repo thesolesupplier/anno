@@ -1,12 +1,10 @@
-use std::borrow::Cow;
-
 use crate::utils::{config, error::AppError, jwt};
 use anyhow::Result;
-use chrono::{DateTime, Duration, SecondsFormat};
 use futures::future::try_join_all;
 use regex_lite::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::borrow::Cow;
 use tokio::sync::OnceCell;
 
 pub static GITHUB_ACCESS_TOKEN: OnceCell<String> = OnceCell::const_new();
@@ -257,12 +255,7 @@ impl Repository {
         (from, to): (&str, &str),
         app_name: Option<&str>,
     ) -> Result<Vec<String>> {
-        let since = increment_one_second(from)?;
-
-        let mut query = Vec::from([
-            ("since", Cow::Borrowed(since.as_str())),
-            ("until", Cow::Borrowed(to)),
-        ]);
+        let mut query = Vec::from([("since", Cow::Borrowed(from)), ("until", Cow::Borrowed(to))]);
 
         if let Some(app_name) = app_name {
             query.push((
@@ -283,7 +276,7 @@ impl Repository {
         };
 
         let pr_merge_commits: Vec<Commit> = self
-            .list_commits(&[("since", since.as_str()), ("until", to)])
+            .list_commits(&[("since", from), ("until", to)])
             .await?
             .into_iter()
             .filter(|c| c.commit.message.starts_with("Merge pull request"))
@@ -384,12 +377,6 @@ impl Repository {
 
         Ok(all_files)
     }
-}
-
-fn increment_one_second(date: &str) -> Result<String> {
-    let new_datetime = DateTime::parse_from_rfc3339(date)? + Duration::seconds(1);
-
-    Ok(new_datetime.to_rfc3339_opts(SecondsFormat::Secs, true))
 }
 
 #[derive(Deserialize)]
