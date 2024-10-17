@@ -4,7 +4,6 @@ use futures::future::try_join_all;
 use regex_lite::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::borrow::Cow;
 use tokio::sync::OnceCell;
 
 pub static GITHUB_ACCESS_TOKEN: OnceCell<String> = OnceCell::const_new();
@@ -99,25 +98,28 @@ impl Repository {
         (from, to): (&str, &str),
         app_name: Option<&str>,
     ) -> Result<Vec<String>> {
-        let mut query = Vec::from([("since", Cow::Borrowed(from)), ("until", Cow::Borrowed(to))]);
-
-        if let Some(app_name) = app_name {
-            query.push((
-                "path",
-                Cow::Owned(format!("apps/{}", app_name.to_lowercase())),
-            ));
-        }
-
-        let mut messages = self
-            .list_commits(&query)
-            .await?
-            .into_iter()
-            .map(|c| c.commit.message)
-            .collect();
-
         let Some(app_name) = app_name else {
+            let messages = self
+                .list_commits(&[("since", from), ("until", to)])
+                .await?
+                .into_iter()
+                .map(|c| c.commit.message)
+                .collect();
+
             return Ok(messages);
         };
+
+        let mut messages = Vec::new();
+        let app_name = app_name.to_lowercase();
+
+        for dir_name in &["apps", "packages"] {
+            let path = format!("{dir_name}/{app_name}");
+            let query = [("since", from), ("until", to), ("path", &path)];
+
+            for commit in self.list_commits(&query).await? {
+                messages.push(commit.commit.message)
+            }
+        }
 
         let pr_merge_commits: Vec<Commit> = self
             .list_commits(&[("since", from), ("until", to)])
@@ -128,18 +130,18 @@ impl Repository {
 
         let pr_regex = Regex::new(r"#(\d+)").unwrap();
 
-        for commit in &pr_merge_commits {
+        for Commit { commit } in &pr_merge_commits {
             if let Some(pr_number) = pr_regex
-                .captures(&commit.commit.message)
+                .captures(&commit.message)
                 .and_then(|c| Some(c.get(1)?.as_str()))
             {
                 if self
                     .get_pull_request_files(pr_number)
                     .await?
                     .iter()
-                    .any(|f| f.filename.contains(&app_name.to_lowercase()))
+                    .any(|f| f.filename.contains(&app_name))
                 {
-                    messages.push(commit.commit.message.clone());
+                    messages.push(commit.message.clone());
                 }
             }
         }
@@ -195,7 +197,6 @@ impl Repository {
 
         let mut all_files: Vec<PullRequestFile> = Vec::new();
         let mut page = 1;
-
         loop {
             let files: Vec<PullRequestFile> = reqwest::Client::new()
                 .get(&url)
@@ -273,7 +274,6 @@ impl PullRequest {
 
         let mut all_commits: Vec<Commit> = Vec::new();
         let mut page = 1;
-
         loop {
             let commits: Vec<Commit> = reqwest::Client::new()
                 .get(&self.commits_url)
@@ -427,7 +427,6 @@ impl WorkflowRuns {
         tracing::info!("Fetching previous successful run");
 
         let mut page = 1;
-
         loop {
             let prev_runs = Self::get_prev_runs(run, page).await?.workflow_runs;
 
