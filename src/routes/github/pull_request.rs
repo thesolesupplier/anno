@@ -29,17 +29,10 @@ pub async fn adr_analysis(
         return Ok(StatusCode::OK);
     }
 
-    let pr_repo = Git::init(&repo.full_name, Some(&pr.head.r#ref)).await?;
-    let old_commit = &pr.base.sha;
-    let new_commit = &pr.head.sha;
+    let diff = pr.get_diff().await?;
+    let commit_messages = pr.get_commit_messages().await?;
 
-    let commit_messages = pr_repo.get_commit_messages(old_commit, new_commit, None)?;
-    let Some(diff) = pr_repo.diff(new_commit, old_commit, None)? else {
-        return Ok(StatusCode::OK);
-    };
-
-    let adr_repo = Git::init(&adr_repo_full_name, None).await?;
-    let adrs = adr_repo.get_contents()?;
+    let adrs = Git::init(&adr_repo_full_name).await?.get_contents()?;
 
     let analysis = ai::Claude::get_pr_adr_analysis(ai::PrAdrAnalysisInput {
         diff: &diff,

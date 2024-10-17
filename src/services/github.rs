@@ -369,7 +369,7 @@ impl Repository {
                 .send()
                 .await?
                 .error_for_status()
-                .inspect_err(|e| tracing::error!("Error fetching pull request files: {e}"))?
+                .inspect_err(|e| tracing::error!("Error fetching PR files: {e}"))?
                 .json()
                 .await?;
 
@@ -397,12 +397,12 @@ struct PullRequestFile {
     filename: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize)]
 pub struct Commit {
     pub commit: CommitDetails,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize)]
 pub struct CommitDetails {
     pub message: String,
 }
@@ -417,16 +417,15 @@ pub struct PullRequest {
     pub number: u64,
     pub title: String,
     pub html_url: String,
-    pub head: PullRequestCommit,
-    pub base: PullRequestCommit,
     pub body: Option<String>,
     pub user: User,
     url: String,
     comments_url: String,
+    commits_url: String,
 }
 
 impl PullRequest {
-    pub async fn fetch_diff(&self) -> Result<String> {
+    pub async fn get_diff(&self) -> Result<String> {
         let gh_token = AccessToken::get().await?;
 
         let diff = reqwest::Client::new()
@@ -456,6 +455,40 @@ impl PullRequest {
             .join("\n");
 
         Ok(filtered_diff)
+    }
+
+    pub async fn get_commit_messages(&self) -> Result<Vec<String>> {
+        let gh_token = AccessToken::get().await?;
+
+        let mut all_commits: Vec<Commit> = Vec::new();
+        let mut page = 1;
+
+        loop {
+            let commits: Vec<Commit> = reqwest::Client::new()
+                .get(&self.commits_url)
+                .bearer_auth(gh_token)
+                .header("Accept", "application/json")
+                .header("User-Agent", "Anno")
+                .query(&[("page", page)])
+                .send()
+                .await?
+                .error_for_status()
+                .inspect_err(|e| tracing::error!("Error fetching PR commits: {e}"))?
+                .json()
+                .await?;
+
+            if commits.is_empty() {
+                break;
+            }
+
+            all_commits.extend(commits);
+
+            page += 1;
+        }
+
+        let all_messages = all_commits.into_iter().map(|c| c.commit.message).collect();
+
+        Ok(all_messages)
     }
 
     pub async fn add_comment(&self, comment: &str) -> Result<()> {
@@ -523,12 +556,6 @@ impl PullRequest {
 
         Ok(comments)
     }
-}
-
-#[derive(Deserialize)]
-pub struct PullRequestCommit {
-    pub r#ref: String,
-    pub sha: String,
 }
 
 #[derive(Deserialize)]

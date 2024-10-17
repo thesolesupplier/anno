@@ -24,7 +24,7 @@ pub fn create_github_token() -> String {
     jsonwebtoken::encode(&Header::new(RS256), &claims, &key).expect("Encoding to be successful")
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct Claims {
     iss: String,
     iat: i64,
