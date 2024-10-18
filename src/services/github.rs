@@ -16,7 +16,18 @@ pub struct Repository {
     commits_url: String,
 }
 
-const APP_DIR_NAMES: [&str; 2] = ["apps", "packages"];
+const MONO_REPO_APP_DIRS: [&str; 2] = ["apps", "packages"];
+const IGNORED_REPO_PATHS: [&str; 9] = [
+    ".github",
+    "build",
+    "Cargo.lock",
+    "Cargo.toml",
+    "coverage",
+    "dist",
+    "node_modules",
+    "package-lock.json",
+    "yarn.lock",
+];
 
 impl Repository {
     pub async fn get_pull_request(&self, id: &str) -> Result<Option<PullRequest>> {
@@ -80,12 +91,14 @@ impl Repository {
             .lines()
             .filter(|line| {
                 if line.contains("diff --git") {
-                    is_inside_ignored_file = line.contains("package-lock.json")
-                        || app_name.map_or(false, |name| {
-                            APP_DIR_NAMES
-                                .iter()
-                                .any(|n| !line.contains(&format!("{n}/{}", name.to_lowercase())))
-                        });
+                    is_inside_ignored_file = IGNORED_REPO_PATHS.iter().any(|p| line.contains(p))
+                        || {
+                            app_name.map_or(false, |name| {
+                                MONO_REPO_APP_DIRS.iter().any(|n| {
+                                    !line.contains(&format!("{n}/{}", name.to_lowercase()))
+                                })
+                            })
+                        };
                 }
 
                 !is_inside_ignored_file
@@ -119,7 +132,7 @@ impl Repository {
         let mut messages = HashSet::new();
         let app_name = app_name.to_lowercase();
 
-        for dir_name in &APP_DIR_NAMES {
+        for dir_name in &MONO_REPO_APP_DIRS {
             let path = format!("{dir_name}/{app_name}");
             let query = [("since", from), ("until", to), ("path", &path)];
 
@@ -151,7 +164,7 @@ impl Repository {
                     .await?
                     .iter()
                     .any(|f| {
-                        APP_DIR_NAMES
+                        MONO_REPO_APP_DIRS
                             .iter()
                             .any(|n| f.filename.contains(&format!("{n}/{app_name}")))
                     })
@@ -273,7 +286,7 @@ impl PullRequest {
             .lines()
             .filter(|line| {
                 if line.contains("diff --git") {
-                    is_inside_ignored_file = line.contains("package-lock.json");
+                    is_inside_ignored_file = IGNORED_REPO_PATHS.iter().any(|p| line.contains(p));
                 }
 
                 !is_inside_ignored_file
