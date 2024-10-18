@@ -65,7 +65,6 @@ pub async fn bug_analysis(
     }
 
     let diff = pr.get_diff().await?;
-    println!("{diff}");
     let commit_messages = pr.get_commit_messages().await?;
 
     let analysis = ai::Claude::get_pr_bug_analysis(&diff, &commit_messages).await?;
