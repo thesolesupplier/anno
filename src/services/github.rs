@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashSet;
 use tokio::sync::OnceCell;
+
 #[derive(Deserialize)]
 pub struct Repository {
     pub full_name: String,
@@ -14,6 +15,8 @@ pub struct Repository {
     compare_url: String,
     commits_url: String,
 }
+
+const APP_DIR_NAMES: [&str; 2] = ["apps", "packages"];
 
 impl Repository {
     pub async fn get_pull_request(&self, id: &str) -> Result<Option<PullRequest>> {
@@ -79,7 +82,9 @@ impl Repository {
                 if line.contains("diff --git") {
                     is_inside_ignored_file = line.contains("package-lock.json")
                         || app_name.map_or(false, |name| {
-                            !line.contains(&format!("/{}/", name.to_lowercase()))
+                            APP_DIR_NAMES
+                                .iter()
+                                .any(|n| !line.contains(&format!("{n}/{}", name.to_lowercase())))
                         });
                 }
 
@@ -109,12 +114,12 @@ impl Repository {
             return Ok(messages);
         };
 
+        // If an app_name is provided, first we get all commits that affected
+        // files with the app_name in their `/apps` or `/packages` paths.
         let mut messages = HashSet::new();
         let app_name = app_name.to_lowercase();
 
-        // If an app_name is provided, first we get all commits that affected
-        // files with the app_name in their `/apps` or `/packages` paths.
-        for dir_name in &["apps", "packages"] {
+        for dir_name in &APP_DIR_NAMES {
             let path = format!("{dir_name}/{app_name}");
             let query = [("since", from), ("until", to), ("path", &path)];
 
@@ -124,7 +129,7 @@ impl Repository {
         }
 
         // Then we get all commits and filter for PR merges because for some reason
-        // the GitHub API excludes these when querying by path.
+        // the GitHub API excludes these from its response when queried by path.
         let pr_merge_commits: Vec<Commit> = self
             .list_commits(&[("since", from), ("until", to)])
             .await?
@@ -134,7 +139,7 @@ impl Repository {
 
         let pr_regex = Regex::new(r"#(\d+)").unwrap();
 
-        // Finally we check each PR number found if they affected files with
+        // Finally we check each PR number to see if they affected files with
         // the app_name in their path and include the commit message if they do.
         for Commit { commit } in &pr_merge_commits {
             if let Some(pr_number) = pr_regex
@@ -145,7 +150,11 @@ impl Repository {
                     .get_pull_request_files(pr_number)
                     .await?
                     .iter()
-                    .any(|f| f.filename.contains(&app_name))
+                    .any(|f| {
+                        APP_DIR_NAMES
+                            .iter()
+                            .any(|n| f.filename.contains(&format!("{n}/{app_name}")))
+                    })
                 {
                     messages.insert(commit.message.clone());
                 }
