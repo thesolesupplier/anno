@@ -4,10 +4,8 @@ use futures::future::try_join_all;
 use regex_lite::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::collections::HashSet;
 use tokio::sync::OnceCell;
-
-pub static GITHUB_ACCESS_TOKEN: OnceCell<String> = OnceCell::const_new();
-
 #[derive(Deserialize)]
 pub struct Repository {
     pub full_name: String,
@@ -111,7 +109,7 @@ impl Repository {
             return Ok(messages);
         };
 
-        let mut messages = Vec::new();
+        let mut messages = HashSet::new();
         let app_name = app_name.to_lowercase();
 
         // If an app_name is provided, first we get all commits that affected
@@ -121,7 +119,7 @@ impl Repository {
             let query = [("since", from), ("until", to), ("path", &path)];
 
             for commit in self.list_commits(&query).await? {
-                messages.push(commit.commit.message)
+                messages.insert(commit.commit.message);
             }
         }
 
@@ -149,12 +147,12 @@ impl Repository {
                     .iter()
                     .any(|f| f.filename.contains(&app_name))
                 {
-                    messages.push(commit.message.clone());
+                    messages.insert(commit.message.clone());
                 }
             }
         }
 
-        Ok(messages)
+        Ok(messages.into_iter().collect())
     }
 
     async fn list_commits<T: Serialize + ?Sized>(&self, query: &T) -> Result<Vec<Commit>> {
@@ -594,6 +592,8 @@ enum UserType {
 pub struct AccessToken {
     token: String,
 }
+
+pub static GITHUB_ACCESS_TOKEN: OnceCell<String> = OnceCell::const_new();
 
 impl AccessToken {
     pub async fn get() -> Result<&'static String> {
