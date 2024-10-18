@@ -191,7 +191,7 @@ impl Repository {
                 .header("Accept", "application/json")
                 .header("User-Agent", "Anno")
                 .query(query)
-                .query(&[("page", page)])
+                .query(&[("page", page), ("per_page", 100)])
                 .send()
                 .await?
                 .error_for_status()
@@ -231,7 +231,7 @@ impl Repository {
                 .bearer_auth(gh_token)
                 .header("Accept", "application/json")
                 .header("User-Agent", "Anno")
-                .query(&[("page", page)])
+                .query(&[("page", page), ("per_page", 100)])
                 .send()
                 .await?
                 .error_for_status()
@@ -308,7 +308,7 @@ impl PullRequest {
                 .bearer_auth(gh_token)
                 .header("Accept", "application/json")
                 .header("User-Agent", "Anno")
-                .query(&[("page", page)])
+                .query(&[("page", page), ("per_page", 100)])
                 .send()
                 .await?
                 .error_for_status()
