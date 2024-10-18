@@ -52,10 +52,15 @@ pub trait ReleaseSummary: Ai {
 }
 
 pub trait PrBugAnalysis: Ai {
-    async fn get_pr_bug_analysis(diff: &str) -> Result<String> {
+    async fn get_pr_bug_analysis(diff: &str, commit_messages: &[String]) -> Result<String> {
         tracing::info!("Fetching AI PR bug analysis");
 
-        let user_prompt = format!("<Diff>{diff}</Diff>");
+        let commit_messages = commit_messages.join("\n");
+
+        let user_prompt = format!(
+            "<Diff>{diff}</Diff>
+            <CommitMessages>{commit_messages}</CommitMessages>"
+        );
 
         Self::prompt(prompts::PR_BUG_ANALYSIS, user_prompt).await
     }

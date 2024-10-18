@@ -4,12 +4,13 @@ use crate::{
     services::{
         github::{PullRequest, Repository, WorkflowRun, WorkflowRuns},
         jira::Issue,
-        slack, Git,
+        slack,
     },
     utils::error::AppError,
 };
 use anyhow::Result;
 use axum::extract::Query;
+use chrono::{DateTime, Duration, SecondsFormat};
 use futures::future::try_join_all;
 use hyper::StatusCode;
 use regex_lite::Regex;
@@ -30,8 +31,6 @@ pub async fn release_summary(
         return Ok(StatusCode::OK);
     };
 
-    let repo = Git::init(&run.repository.full_name, None).await?;
-
     let new_commit = &run.head_sha;
     let old_commit = &prev_run.head_sha;
 
@@ -40,11 +39,19 @@ pub async fn release_summary(
         .then(|| run.get_mono_app_name())
         .flatten();
 
-    let Some(diff) = repo.diff(new_commit, old_commit, app_name)? else {
-        return Ok(StatusCode::OK);
-    };
+    let diff = run
+        .repository
+        .fetch_diff(old_commit, new_commit, app_name)
+        .await?;
 
-    let commit_messages = repo.get_commit_messages(old_commit, new_commit, app_name)?;
+    let from = &increment_by_one_second(&prev_run.head_commit.timestamp)?;
+    let to = &run.head_commit.timestamp;
+
+    let commit_messages = run
+        .repository
+        .fetch_commit_messages_in_range((from, to), app_name)
+        .await?;
+
     let jira_issues = get_jira_issues(&commit_messages).await?;
     let pull_requests = get_pull_requests(&run.repository, &commit_messages).await?;
 
@@ -123,4 +130,10 @@ async fn get_pull_requests<'a>(
         .collect();
 
     Ok(pull_requests)
+}
+
+fn increment_by_one_second(date: &str) -> Result<String> {
+    let new_datetime = DateTime::parse_from_rfc3339(date)? + Duration::seconds(1);
+
+    Ok(new_datetime.to_rfc3339_opts(SecondsFormat::Secs, true))
 }
