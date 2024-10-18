@@ -98,6 +98,8 @@ impl Repository {
         (from, to): (&str, &str),
         app_name: Option<&str>,
     ) -> Result<Vec<String>> {
+        // We get all commit messages and return early if no app_name is provided
+        // because we know its not a mono-repo and they are all relevant.
         let Some(app_name) = app_name else {
             let messages = self
                 .list_commits(&[("since", from), ("until", to)])
@@ -112,6 +114,8 @@ impl Repository {
         let mut messages = Vec::new();
         let app_name = app_name.to_lowercase();
 
+        // If an app_name is provided, first we get all commits that affected
+        // files with the app_name in their `/apps` or `/packages` paths.
         for dir_name in &["apps", "packages"] {
             let path = format!("{dir_name}/{app_name}");
             let query = [("since", from), ("until", to), ("path", &path)];
@@ -121,6 +125,8 @@ impl Repository {
             }
         }
 
+        // Then we get all commits and filter for PR merges because for some reason
+        // the GitHub API excludes these when querying by path.
         let pr_merge_commits: Vec<Commit> = self
             .list_commits(&[("since", from), ("until", to)])
             .await?
@@ -130,6 +136,8 @@ impl Repository {
 
         let pr_regex = Regex::new(r"#(\d+)").unwrap();
 
+        // Finally we check each PR number found if they affected files with
+        // the app_name in their path and include the commit message if they do.
         for Commit { commit } in &pr_merge_commits {
             if let Some(pr_number) = pr_regex
                 .captures(&commit.message)
