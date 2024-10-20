@@ -522,7 +522,7 @@ pub struct WorkflowRun {
 
 impl WorkflowRun {
     pub fn is_on_master(&self) -> bool {
-        self.head_branch == "master"
+        self.head_branch == "master" || self.head_branch == "main"
     }
 
     pub fn get_mono_app_name(&self) -> Option<&str> {
