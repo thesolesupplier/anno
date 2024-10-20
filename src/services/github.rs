@@ -184,21 +184,33 @@ impl Repository {
 
         let pr_regex = Regex::new(r"#(\d+)").unwrap();
 
-        // Finally we check each PR number to see if they affected files with
-        // the app_name in their path and include the commit message if they do.
+        // Finally we check each PR number to see if it affected files with
+        // the app_name in their path and include the commit message if it did.
         for Commit { commit } in &pr_merge_commits {
-            if let Some(pr_number) = pr_regex
+            let Some(pr_number) = pr_regex
                 .captures(&commit.message)
                 .and_then(|c| Some(c.get(1)?.as_str()))
-            {
-                if self
-                    .get_pull_request_files(pr_number)
-                    .await?
+            else {
+                continue;
+            };
+
+            let mut page = 1;
+            loop {
+                let files = self.get_pull_request_files(pr_number, page).await?;
+
+                if files.is_empty() {
+                    break;
+                }
+
+                if files
                     .iter()
                     .any(|f| target_paths.iter().any(|p| f.filename.contains(p)))
                 {
                     messages.insert(commit.message.clone());
+                    break;
                 }
+
+                page += 1;
             }
         }
 
@@ -241,39 +253,27 @@ impl Repository {
         Ok(all_commits)
     }
 
-    async fn get_pull_request_files(&self, id: &str) -> Result<Vec<PullRequestFile>> {
+    async fn get_pull_request_files(&self, id: &str, page: u8) -> Result<Vec<PullRequestFile>> {
+        tracing::info!("Listing page {page} of pull request #{id} files");
+
         let gh_token = AccessToken::get().await?;
 
         let url = self.pulls_url.replace("{/number}", &format!("/{id}/files"));
 
-        let mut all_files: Vec<PullRequestFile> = Vec::new();
-        let mut page = 1;
-        loop {
-            tracing::info!("Listing page {page} of pull request #{id} files");
+        let files: Vec<PullRequestFile> = reqwest::Client::new()
+            .get(&url)
+            .bearer_auth(gh_token)
+            .header("Accept", "application/json")
+            .header("User-Agent", "Anno")
+            .query(&[("page", page), ("per_page", 100)])
+            .send()
+            .await?
+            .error_for_status()
+            .inspect_err(|e| tracing::error!("Error fetching PR files: {e}"))?
+            .json()
+            .await?;
 
-            let files: Vec<PullRequestFile> = reqwest::Client::new()
-                .get(&url)
-                .bearer_auth(gh_token)
-                .header("Accept", "application/json")
-                .header("User-Agent", "Anno")
-                .query(&[("page", page), ("per_page", 100)])
-                .send()
-                .await?
-                .error_for_status()
-                .inspect_err(|e| tracing::error!("Error fetching PR files: {e}"))?
-                .json()
-                .await?;
-
-            if files.is_empty() {
-                break;
-            }
-
-            all_files.extend(files);
-
-            page += 1;
-        }
-
-        Ok(all_files)
+        Ok(files)
     }
 }
 
