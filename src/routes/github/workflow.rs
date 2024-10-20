@@ -34,14 +34,11 @@ pub async fn release_summary(
     let new_commit = &run.head_sha;
     let old_commit = &prev_run.head_sha;
 
-    let app_name = is_mono_repo
-        .unwrap_or(false)
-        .then(|| run.get_mono_app_name())
-        .flatten();
+    let target_paths = run.get_config().await?.get_target_paths();
 
     let diff = run
         .repository
-        .fetch_diff(old_commit, new_commit, app_name)
+        .fetch_diff(old_commit, new_commit, &target_paths)
         .await?;
 
     let from = &increment_by_one_second(&prev_run.head_commit.timestamp)?;
@@ -49,13 +46,18 @@ pub async fn release_summary(
 
     let commit_messages = run
         .repository
-        .fetch_commit_messages_in_range((from, to), app_name)
+        .fetch_commit_messages_in_range((from, to), &target_paths)
         .await?;
 
     let jira_issues = get_jira_issues(&commit_messages).await?;
     let pull_requests = get_pull_requests(&run.repository, &commit_messages).await?;
 
     let summary = ai::ChatGpt::get_release_summary(&diff, &commit_messages).await?;
+
+    let app_name = is_mono_repo
+        .unwrap_or(false)
+        .then(|| run.get_mono_app_name())
+        .flatten();
 
     slack::post_release_message(slack::MessageInput {
         app_name,

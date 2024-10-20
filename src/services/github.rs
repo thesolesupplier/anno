@@ -1,5 +1,6 @@
 use crate::utils::{config, error::AppError, jwt};
 use anyhow::Result;
+use base64::prelude::*;
 use futures::future::try_join_all;
 use regex_lite::Regex;
 use serde::{Deserialize, Serialize};
@@ -14,9 +15,9 @@ pub struct Repository {
     pulls_url: String,
     compare_url: String,
     commits_url: String,
+    contents_url: String,
 }
 
-const MONO_REPO_APP_DIRS: [&str; 2] = ["apps", "packages"];
 const IGNORED_REPO_PATHS: [&str; 9] = [
     ".github",
     "build",
@@ -30,6 +31,13 @@ const IGNORED_REPO_PATHS: [&str; 9] = [
 ];
 
 impl Repository {
+    pub fn get_compare_url(&self, old_sha: &str, new_sha: &str) -> String {
+        format!(
+            "https://github.com/{}/compare/{}...{}",
+            self.full_name, old_sha, new_sha
+        )
+    }
+
     pub async fn get_pull_request(&self, id: &str) -> Result<Option<PullRequest>> {
         let gh_token = AccessToken::get().await?;
 
@@ -61,11 +69,32 @@ impl Repository {
         Ok(Some(pull_request))
     }
 
+    pub async fn get_file(&self, path: &str, sha: &str) -> Result<RepoFile> {
+        let gh_token = AccessToken::get().await?;
+
+        let url = self.contents_url.replace("{+path}", path);
+
+        let response = reqwest::Client::new()
+            .get(url)
+            .bearer_auth(gh_token)
+            .header("Accept", "application/json")
+            .header("User-Agent", "Anno")
+            .query(&[("ref", sha)])
+            .send()
+            .await?
+            .error_for_status()
+            .inspect_err(|e| tracing::error!("Error getting repo file: {e}"))?
+            .json::<RepoFile>()
+            .await?;
+
+        Ok(response)
+    }
+
     pub async fn fetch_diff(
         &self,
         old_sha: &str,
         new_sha: &str,
-        app_name: Option<&str>,
+        target_paths: &Option<Vec<String>>,
     ) -> Result<String> {
         let gh_token = AccessToken::get().await?;
 
@@ -92,13 +121,9 @@ impl Repository {
             .filter(|line| {
                 if line.contains("diff --git") {
                     is_inside_ignored_file = IGNORED_REPO_PATHS.iter().any(|p| line.contains(p))
-                        || {
-                            app_name.map_or(false, |name| {
-                                MONO_REPO_APP_DIRS.iter().any(|n| {
-                                    !line.contains(&format!("{n}/{}", name.to_lowercase()))
-                                })
-                            })
-                        };
+                        || target_paths.as_ref().map_or(false, |paths| {
+                            paths.iter().all(|p| !line.contains(p.as_str()))
+                        });
                 }
 
                 !is_inside_ignored_file
@@ -112,11 +137,11 @@ impl Repository {
     pub async fn fetch_commit_messages_in_range(
         &self,
         (from, to): (&str, &str),
-        app_name: Option<&str>,
+        target_paths: &Option<Vec<String>>,
     ) -> Result<Vec<String>> {
         // We get all commit messages and return early if no app_name is provided
         // because we know its not a mono-repo and they are all relevant.
-        let Some(app_name) = app_name else {
+        let Some(target_paths) = target_paths else {
             let messages = self
                 .list_commits(&[("since", from), ("until", to)])
                 .await?
@@ -130,11 +155,10 @@ impl Repository {
         // If an app_name is provided, first we get all commits that affected
         // files with the app_name in their `/apps` or `/packages` paths.
         let mut messages = HashSet::new();
-        let app_name = app_name.to_lowercase();
+        // let app_name = app_name.to_lowercase();
 
-        for dir_name in &MONO_REPO_APP_DIRS {
-            let path = format!("{dir_name}/{app_name}");
-            let query = [("since", from), ("until", to), ("path", &path)];
+        for path in target_paths {
+            let query = [("since", from), ("until", to), ("path", path)];
 
             for commit in self.list_commits(&query).await? {
                 messages.insert(commit.commit.message);
@@ -163,11 +187,7 @@ impl Repository {
                     .get_pull_request_files(pr_number)
                     .await?
                     .iter()
-                    .any(|f| {
-                        MONO_REPO_APP_DIRS
-                            .iter()
-                            .any(|n| f.filename.contains(&format!("{n}/{app_name}")))
-                    })
+                    .any(|f| target_paths.iter().any(|p| f.filename.contains(p)))
                 {
                     messages.insert(commit.message.clone());
                 }
@@ -211,13 +231,6 @@ impl Repository {
         Ok(all_commits)
     }
 
-    pub fn get_compare_url(&self, old_sha: &str, new_sha: &str) -> String {
-        format!(
-            "https://github.com/{}/compare/{}...{}",
-            self.full_name, old_sha, new_sha
-        )
-    }
-
     async fn get_pull_request_files(&self, id: &str) -> Result<Vec<PullRequestFile>> {
         let gh_token = AccessToken::get().await?;
 
@@ -250,6 +263,54 @@ impl Repository {
 
         Ok(all_files)
     }
+}
+
+#[derive(Deserialize)]
+pub struct RepoFile {
+    pub content: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct WorkflowConfigFile {
+    on: Option<WorkflowOnConfig>,
+}
+
+impl WorkflowConfigFile {
+    pub fn from_base64_str(content: &str) -> Result<Self> {
+        let decoded_config = BASE64_STANDARD.decode(content.replace("\n", ""))?;
+        let config_content = String::from_utf8(decoded_config)?;
+        let config = serde_yaml::from_str(&config_content)?;
+
+        Ok(config)
+    }
+
+    pub fn get_target_paths(&self) -> Option<Vec<String>> {
+        let paths = self.on.as_ref()?.push.as_ref()?.paths.as_ref()?;
+
+        if paths.is_empty() {
+            return None;
+        }
+
+        let special_char_regex = Regex::new(r"[*\[\]?!+]").unwrap();
+
+        let sanitised_paths = paths
+            .iter()
+            .map(|p| special_char_regex.replace_all(p, "").to_string())
+            .filter(|p| IGNORED_REPO_PATHS.iter().all(|i| !p.contains(i)))
+            .collect();
+
+        Some(sanitised_paths)
+    }
+}
+
+#[derive(Deserialize, Debug)]
+struct WorkflowOnConfig {
+    push: Option<WorkflowOnPushConfig>,
+}
+
+#[derive(Deserialize, Debug)]
+struct WorkflowOnPushConfig {
+    paths: Option<Vec<String>>,
 }
 
 #[derive(Deserialize)]
@@ -513,6 +574,7 @@ pub struct WorkflowRun {
     pub repository: Repository,
     pub actor: WorkflowRunActor,
     pub head_commit: WorkflowRunCommit,
+    path: String,
     created_at: String,
     conclusion: Option<String>,
     head_branch: String,
@@ -589,6 +651,13 @@ impl WorkflowRun {
 
     pub fn get_run_url(&self) -> &String {
         &self.html_url
+    }
+
+    pub async fn get_config(&self) -> Result<WorkflowConfigFile> {
+        let config_file = self.repository.get_file(&self.path, &self.head_sha).await?;
+        let config = WorkflowConfigFile::from_base64_str(&config_file.content)?;
+
+        Ok(config)
     }
 }
 
