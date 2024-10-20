@@ -19,7 +19,7 @@ use std::{collections::HashSet, sync::OnceLock};
 pub async fn release_summary(
     GithubEvent(WorkflowEvent { workflow_run: run }): GithubEvent<WorkflowEvent>,
 ) -> Result<StatusCode, AppError> {
-    tracing::info!("Processing '{}' run", run.repository.name);
+    tracing::info!("Processing {} run {}", run.repository.name, run.name);
 
     if !run.is_on_master() || !run.is_first_successful_attempt().await? {
         return Ok(StatusCode::OK);

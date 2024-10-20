@@ -17,7 +17,7 @@ pub async fn adr_analysis(
         action,
     }): GithubEvent<PullRequestEvent>,
 ) -> Result<StatusCode, AppError> {
-    tracing::info!("Processing '{}' pull request on '{}'", pr.title, repo.name);
+    tracing::info!("Processing {} pull request #{}", repo.name, pr.title);
 
     let adr_repo_full_name = config::get("ADR_REPO_FULL_NAME")?;
 
@@ -54,7 +54,7 @@ pub async fn bug_analysis(
         action,
     }): GithubEvent<PullRequestEvent>,
 ) -> Result<StatusCode, AppError> {
-    tracing::info!("Processing '{}' pull request on '{}'", pr.title, repo.name);
+    tracing::info!("Processing {} pull request #{}", repo.name, pr.title);
 
     if pr.user.is_bot() {
         return Ok(StatusCode::OK);

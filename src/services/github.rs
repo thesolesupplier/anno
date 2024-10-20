@@ -42,7 +42,6 @@ impl Repository {
         tracing::info!("Fetching pull request #{id}");
 
         let gh_token = AccessToken::get().await?;
-
         let url = self.pulls_url.replace("{/number}", &format!("/{id}"));
 
         let response = match reqwest::Client::new()
@@ -75,7 +74,6 @@ impl Repository {
         tracing::info!("Fetching file {path} for {sha}");
 
         let gh_token = AccessToken::get().await?;
-
         let url = self.contents_url.replace("{+path}", path);
 
         let response = reqwest::Client::new()
@@ -103,7 +101,6 @@ impl Repository {
         tracing::info!("Fetching diff beween {old_sha} - {new_sha}");
 
         let gh_token = AccessToken::get().await?;
-
         let url = self
             .compare_url
             .replace("{base}...{head}", &format!("{old_sha}...{new_sha}"));
@@ -121,7 +118,6 @@ impl Repository {
             .await?;
 
         let mut is_inside_ignored_file = false;
-
         let filtered_diff = diff
             .lines()
             .filter(|line| {
@@ -184,8 +180,8 @@ impl Repository {
 
         let pr_regex = Regex::new(r"#(\d+)").unwrap();
 
-        // Finally we check each PR number to see if it affected files with
-        // the app_name in their path and include the commit message if it did.
+        // Finally we check each PR number to see if it affected any files with
+        // the app_name in their paths and include the commit message if it did.
         for Commit { commit } in &pr_merge_commits {
             let Some(pr_number) = pr_regex
                 .captures(&commit.message)
@@ -219,7 +215,6 @@ impl Repository {
 
     async fn list_commits<T: Serialize + ?Sized>(&self, query: &T) -> Result<Vec<Commit>> {
         let gh_token = AccessToken::get().await?;
-
         let url = self.commits_url.replace("{/sha}", "");
 
         let mut all_commits: Vec<Commit> = Vec::new();
@@ -257,7 +252,6 @@ impl Repository {
         tracing::info!("Listing page {page} of pull request #{id} files");
 
         let gh_token = AccessToken::get().await?;
-
         let url = self.pulls_url.replace("{/number}", &format!("/{id}/files"));
 
         let files: Vec<PullRequestFile> = reqwest::Client::new()
@@ -283,12 +277,12 @@ pub struct RepoFile {
 }
 
 #[derive(Deserialize, Debug)]
-pub struct WorkflowConfigFile {
+pub struct WorkflowConfig {
     on: Option<WorkflowOnConfig>,
     env: Option<WorkflowEnvVariables>,
 }
 
-impl WorkflowConfigFile {
+impl WorkflowConfig {
     pub fn from_base64_str(content: &str) -> Result<Self> {
         let decoded_config = BASE64_STANDARD.decode(content.replace("\n", ""))?;
         let config_content = String::from_utf8(decoded_config)?;
@@ -308,8 +302,8 @@ impl WorkflowConfigFile {
 
         let sanitised_paths = paths
             .iter()
-            .map(|p| special_char_regex.replace_all(p, "").to_string())
             .filter(|p| IGNORED_REPO_PATHS.iter().all(|i| !p.contains(i)))
+            .map(|p| special_char_regex.replace_all(p, "").to_string())
             .collect();
 
         Some(sanitised_paths)
@@ -508,7 +502,6 @@ impl PullRequestComment {
         tracing::info!("Marking comment {} as outdated", &self.node_id);
 
         let gh_token = AccessToken::get().await?;
-
         let mutation = format!(
             r#"
             mutation {{
@@ -686,9 +679,9 @@ impl WorkflowRun {
         &self.html_url
     }
 
-    pub async fn get_config(&self) -> Result<WorkflowConfigFile> {
+    pub async fn get_config(&self) -> Result<WorkflowConfig> {
         let config_file = self.repository.get_file(&self.path, &self.head_sha).await?;
-        let config = WorkflowConfigFile::from_base64_str(&config_file.content)?;
+        let config = WorkflowConfig::from_base64_str(&config_file.content)?;
 
         Ok(config)
     }
