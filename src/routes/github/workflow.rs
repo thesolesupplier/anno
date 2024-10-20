@@ -75,8 +75,6 @@ pub struct WorkflowEvent {
 static JIRA_ISSUE_REGEX: OnceLock<Regex> = OnceLock::new();
 
 async fn get_jira_issues(commit_messages: &[String]) -> Result<Vec<Issue>> {
-    tracing::info!("Fetching JIRA issues");
-
     let issue_regex = JIRA_ISSUE_REGEX.get_or_init(|| Regex::new(r"TFW-\d+").unwrap());
 
     let requests: Vec<_> = commit_messages
@@ -102,8 +100,6 @@ async fn get_pull_requests<'a>(
     repo: &'a Repository,
     commit_messages: &'a [String],
 ) -> Result<Vec<PullRequest>> {
-    tracing::info!("Fetching Pull Requests");
-
     let pr_regex = PR_REGEX.get_or_init(|| Regex::new(r"#(\d+)").unwrap());
 
     let requests: Vec<_> = commit_messages

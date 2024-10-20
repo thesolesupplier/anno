@@ -39,6 +39,8 @@ impl Repository {
     }
 
     pub async fn get_pull_request(&self, id: &str) -> Result<Option<PullRequest>> {
+        tracing::info!("Fetching pull request #{id}");
+
         let gh_token = AccessToken::get().await?;
 
         let url = self.pulls_url.replace("{/number}", &format!("/{id}"));
@@ -70,6 +72,8 @@ impl Repository {
     }
 
     pub async fn get_file(&self, path: &str, sha: &str) -> Result<RepoFile> {
+        tracing::info!("Fetching file {path} for {sha}");
+
         let gh_token = AccessToken::get().await?;
 
         let url = self.contents_url.replace("{+path}", path);
@@ -96,6 +100,8 @@ impl Repository {
         new_sha: &str,
         target_paths: &Option<Vec<String>>,
     ) -> Result<String> {
+        tracing::info!("Fetching diff beween {old_sha} - {new_sha}");
+
         let gh_token = AccessToken::get().await?;
 
         let url = self
@@ -139,6 +145,8 @@ impl Repository {
         (from, to): (&str, &str),
         target_paths: &Option<Vec<String>>,
     ) -> Result<Vec<String>> {
+        tracing::info!("Fetching commits between {from} - {to}");
+
         // We get all commit messages and return early if no app_name is provided
         // because we know its not a mono-repo and they are all relevant.
         let Some(target_paths) = target_paths else {
@@ -205,6 +213,8 @@ impl Repository {
         let mut all_commits: Vec<Commit> = Vec::new();
         let mut page = 1;
         loop {
+            tracing::info!("Listing page {page} of commits");
+
             let commits: Vec<Commit> = reqwest::Client::new()
                 .get(&url)
                 .bearer_auth(gh_token)
@@ -239,6 +249,8 @@ impl Repository {
         let mut all_files: Vec<PullRequestFile> = Vec::new();
         let mut page = 1;
         loop {
+            tracing::info!("Listing page {page} of pull request #{id} files");
+
             let files: Vec<PullRequestFile> = reqwest::Client::new()
                 .get(&url)
                 .bearer_auth(gh_token)
@@ -338,6 +350,8 @@ pub struct PullRequest {
 
 impl PullRequest {
     pub async fn get_diff(&self) -> Result<String> {
+        tracing::info!("Fetching pull request #{} diff", &self.number);
+
         let gh_token = AccessToken::get().await?;
 
         let diff = reqwest::Client::new()
@@ -370,6 +384,8 @@ impl PullRequest {
     }
 
     pub async fn get_commit_messages(&self) -> Result<Vec<String>> {
+        tracing::info!("Fetching pull request #{} commit messages", &self.number);
+
         let gh_token = AccessToken::get().await?;
 
         let mut all_commits: Vec<Commit> = Vec::new();
@@ -403,6 +419,8 @@ impl PullRequest {
     }
 
     pub async fn add_comment(&self, comment: &str) -> Result<()> {
+        tracing::info!("Adding pull request #{} comment", &self.number);
+
         let pr_comment_enabled = config::get("PR_COMMENT_ENABLED").is_ok_and(|v| v == "true");
 
         if !pr_comment_enabled {
@@ -429,6 +447,8 @@ impl PullRequest {
     }
 
     pub async fn hide_outdated_comments(&self) -> Result<()> {
+        tracing::info!("Hiding outdated pull request {} comments", &self.number);
+
         let pr_comment_enabled = config::get("PR_COMMENT_ENABLED").is_ok_and(|v| v == "true");
 
         if !pr_comment_enabled {
@@ -450,6 +470,8 @@ impl PullRequest {
     }
 
     async fn get_comments(&self) -> Result<Vec<PullRequestComment>> {
+        tracing::info!("Getting pull request #{} comments", &self.number);
+
         let gh_token = AccessToken::get().await?;
 
         let comments = reqwest::Client::new()
@@ -483,6 +505,8 @@ impl PullRequestComment {
     }
 
     pub async fn mark_as_outdated(&self) -> Result<()> {
+        tracing::info!("Marking comment {} as outdated", &self.node_id);
+
         let gh_token = AccessToken::get().await?;
 
         let mutation = format!(
@@ -635,6 +659,8 @@ impl WorkflowRun {
     }
 
     async fn get_prev_attempt(&self) -> Result<Option<WorkflowRun>, AppError> {
+        tracing::info!("Fetching previous '{}' workflow attempt", &self.name);
+
         let gh_token = AccessToken::get().await?;
 
         let Some(prev_attempt_url) = &self.previous_attempt_url else {
