@@ -273,6 +273,7 @@ pub struct RepoFile {
 #[derive(Deserialize, Debug)]
 pub struct WorkflowConfigFile {
     on: Option<WorkflowOnConfig>,
+    env: Option<WorkflowEnvVariables>,
 }
 
 impl WorkflowConfigFile {
@@ -301,6 +302,16 @@ impl WorkflowConfigFile {
 
         Some(sanitised_paths)
     }
+
+    pub fn get_app_name(&self) -> Option<&str> {
+        self.env.as_ref()?.anno_app_name.as_deref()
+    }
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+struct WorkflowEnvVariables {
+    anno_app_name: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -585,10 +596,6 @@ pub struct WorkflowRun {
 impl WorkflowRun {
     pub fn is_on_master(&self) -> bool {
         self.head_branch == "master" || self.head_branch == "main"
-    }
-
-    pub fn get_mono_app_name(&self) -> Option<&str> {
-        self.name.split_whitespace().next()
     }
 
     pub fn is_successful_attempt(&self) -> bool {

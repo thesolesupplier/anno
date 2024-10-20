@@ -9,7 +9,6 @@ use crate::{
     utils::error::AppError,
 };
 use anyhow::Result;
-use axum::extract::Query;
 use chrono::{DateTime, Duration, SecondsFormat};
 use futures::future::try_join_all;
 use hyper::StatusCode;
@@ -18,7 +17,6 @@ use serde::Deserialize;
 use std::{collections::HashSet, sync::OnceLock};
 
 pub async fn release_summary(
-    Query(WorkflowParams { is_mono_repo }): Query<WorkflowParams>,
     GithubEvent(WorkflowEvent { workflow_run: run }): GithubEvent<WorkflowEvent>,
 ) -> Result<StatusCode, AppError> {
     tracing::info!("Processing '{}' run", run.repository.name);
@@ -31,10 +29,12 @@ pub async fn release_summary(
         return Ok(StatusCode::OK);
     };
 
+    let workflow_config = run.get_config().await?;
+    let app_name = workflow_config.get_app_name();
+    let target_paths = workflow_config.get_target_paths();
+
     let new_commit = &run.head_sha;
     let old_commit = &prev_run.head_sha;
-
-    let target_paths = run.get_config().await?.get_target_paths();
 
     let diff = run
         .repository
@@ -54,14 +54,8 @@ pub async fn release_summary(
 
     let summary = ai::ChatGpt::get_release_summary(&diff, &commit_messages).await?;
 
-    let app_name = is_mono_repo
-        .unwrap_or(false)
-        .then(|| run.get_mono_app_name())
-        .flatten();
-
     slack::post_release_message(slack::MessageInput {
         app_name,
-        is_mono_repo,
         jira_issues,
         prev_run: &prev_run,
         pull_requests,
@@ -76,11 +70,6 @@ pub async fn release_summary(
 #[derive(Deserialize)]
 pub struct WorkflowEvent {
     pub workflow_run: WorkflowRun,
-}
-
-#[derive(Deserialize)]
-pub struct WorkflowParams {
-    pub is_mono_repo: Option<bool>,
 }
 
 static JIRA_ISSUE_REGEX: OnceLock<Regex> = OnceLock::new();

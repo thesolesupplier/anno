@@ -9,7 +9,6 @@ pub struct MessageInput<'a> {
     pub app_name: Option<&'a str>,
     pub jira_issues: Vec<Issue>,
     pub pull_requests: Vec<PullRequest>,
-    pub is_mono_repo: Option<bool>,
     pub prev_run: &'a WorkflowRun,
     pub run: &'a WorkflowRun,
     pub summary: String,
@@ -19,7 +18,6 @@ pub async fn post_release_message(
     MessageInput {
         app_name,
         jira_issues,
-        is_mono_repo,
         prev_run,
         pull_requests,
         run: workflow_run,
@@ -42,7 +40,7 @@ pub async fn post_release_message(
     let mut message_blocks: Vec<serde_json::Value> =
         Vec::from([get_header_block(app_name, workflow_run)]);
 
-    if is_mono_repo.unwrap_or(false) {
+    if app_name.is_some() {
         message_blocks.push(get_repo_block(&workflow_run.repository.name));
     }
 
