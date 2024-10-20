@@ -122,10 +122,12 @@ impl Repository {
             .lines()
             .filter(|line| {
                 if line.contains("diff --git") {
-                    is_inside_ignored_file = IGNORED_REPO_PATHS.iter().any(|p| line.contains(p))
-                        || target_paths.as_ref().map_or(false, |paths| {
-                            paths.iter().all(|p| !line.contains(p.as_str()))
-                        });
+                    let is_ignored_file = IGNORED_REPO_PATHS.iter().any(|p| line.contains(p));
+                    let is_non_target_file = target_paths.as_ref().map_or(false, |paths| {
+                        paths.iter().all(|p| !line.contains(p.as_str()))
+                    });
+
+                    is_inside_ignored_file = is_ignored_file || is_non_target_file;
                 }
 
                 !is_inside_ignored_file
@@ -159,7 +161,6 @@ impl Repository {
         // If an app_name is provided, first we get all commits that affected
         // files with the app_name in their `/apps` or `/packages` paths.
         let mut messages = HashSet::new();
-        // let app_name = app_name.to_lowercase();
 
         for path in target_paths {
             let query = [("since", from), ("until", to), ("path", path)];

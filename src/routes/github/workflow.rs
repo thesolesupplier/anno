@@ -4,7 +4,7 @@ use crate::{
     services::{
         github::{PullRequest, Repository, WorkflowRun, WorkflowRuns},
         jira::Issue,
-        slack,
+        slack, Git,
     },
     utils::error::AppError,
 };
@@ -17,7 +17,10 @@ use serde::Deserialize;
 use std::{collections::HashSet, sync::OnceLock};
 
 pub async fn release_summary(
-    GithubEvent(WorkflowEvent { workflow_run: run }): GithubEvent<WorkflowEvent>,
+    GithubEvent(WorkflowEvent {
+        workflow_run: run,
+        repository,
+    }): GithubEvent<WorkflowEvent>,
 ) -> Result<StatusCode, AppError> {
     tracing::info!("Processing {} run {}", run.repository.name, run.name);
 
@@ -41,17 +44,21 @@ pub async fn release_summary(
         .fetch_diff(old_commit, new_commit, &target_paths)
         .await?;
 
-    let from = &increment_by_one_second(&prev_run.head_commit.timestamp)?;
-    let to = &run.head_commit.timestamp;
+    let commit_messages = if repository.is_too_large_to_clone() {
+        let from = &increment_by_one_second(&prev_run.head_commit.timestamp)?;
+        let to = &run.head_commit.timestamp;
 
-    let commit_messages = run
-        .repository
-        .fetch_commit_messages_in_range((from, to), &target_paths)
-        .await?;
+        run.repository
+            .fetch_commit_messages_in_range((from, to), &target_paths)
+            .await?
+    } else {
+        Git::init(&run.repository.full_name)
+            .await?
+            .get_commit_messages(old_commit, new_commit, &target_paths)?
+    };
 
     let jira_issues = get_jira_issues(&commit_messages).await?;
     let pull_requests = get_pull_requests(&run.repository, &commit_messages).await?;
-
     let summary = ai::ChatGpt::get_release_summary(&diff, &commit_messages).await?;
 
     slack::post_release_message(slack::MessageInput {
@@ -70,6 +77,18 @@ pub async fn release_summary(
 #[derive(Deserialize)]
 pub struct WorkflowEvent {
     pub workflow_run: WorkflowRun,
+    pub repository: WorkflowEventRepository,
+}
+
+#[derive(Deserialize)]
+pub struct WorkflowEventRepository {
+    size: u64,
+}
+
+impl WorkflowEventRepository {
+    pub fn is_too_large_to_clone(&self) -> bool {
+        self.size > 60_000
+    }
 }
 
 static JIRA_ISSUE_REGEX: OnceLock<Regex> = OnceLock::new();

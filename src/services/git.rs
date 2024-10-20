@@ -1,6 +1,6 @@
 use crate::{services::github::AccessToken, utils::config};
 use anyhow::Result;
-use git2::{ObjectType, TreeEntry, TreeWalkMode, TreeWalkResult};
+use git2::{Commit, ObjectType, Oid, TreeEntry, TreeWalkMode, TreeWalkResult};
 use std::str;
 
 pub struct Git {
@@ -63,5 +63,80 @@ impl Git {
             })?;
 
         Ok(contents)
+    }
+
+    pub fn get_commit_messages(
+        &self,
+        start_commit: &str,
+        end_commit: &str,
+        target_paths: &Option<Vec<String>>,
+    ) -> Result<Vec<String>> {
+        tracing::info!("Getting commit messages");
+
+        let mut revwalk = self.repo.revwalk()?;
+        revwalk.set_sorting(git2::Sort::TIME)?;
+
+        let commit_range = &format!("{start_commit}..{end_commit}");
+        revwalk.push_range(commit_range)?;
+
+        let mut messages = Vec::new();
+        for oid in revwalk {
+            if let Some(message) = self.get_commit_message(oid?, target_paths)? {
+                messages.push(message);
+            }
+        }
+
+        Ok(messages)
+    }
+
+    fn get_commit_message(
+        &self,
+        commit: Oid,
+        target_paths: &Option<Vec<String>>,
+    ) -> Result<Option<String>> {
+        let commit = self.repo.find_commit(commit)?;
+
+        if let Some(target_paths) = target_paths {
+            let affected_files = self.get_affected_files(&commit)?;
+
+            if !affected_files
+                .iter()
+                .any(|path| target_paths.iter().any(|p| path.contains(p)))
+            {
+                return Ok(None);
+            }
+        }
+
+        let message = commit.message().unwrap_or_default().to_string();
+
+        Ok(Some(message))
+    }
+
+    fn get_affected_files(&self, commit: &Commit) -> Result<Vec<String>> {
+        let tree = commit.tree()?;
+        let parent_tree = commit.parent(0)?.tree()?;
+
+        let diff = self
+            .repo
+            .diff_tree_to_tree(Some(&parent_tree), Some(&tree), None)?;
+
+        let mut file_paths = Vec::new();
+        diff.foreach(
+            &mut |delta, _| {
+                let file_path = delta
+                    .old_file()
+                    .path()
+                    .map(|p| p.to_string_lossy().into_owned());
+
+                file_paths.push(file_path.unwrap());
+
+                true
+            },
+            None,
+            None,
+            None,
+        )?;
+
+        Ok(file_paths)
     }
 }
