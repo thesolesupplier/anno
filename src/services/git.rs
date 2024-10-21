@@ -114,11 +114,15 @@ impl Git {
 
     fn get_affected_files(&self, commit: &Commit) -> Result<Vec<String>> {
         let tree = commit.tree()?;
-        let parent_tree = commit.parent(0)?.tree()?;
+        let parent_tree = if commit.parent_count() > 0 {
+            Some(commit.parent(0)?.tree()?)
+        } else {
+            None
+        };
 
         let diff = self
             .repo
-            .diff_tree_to_tree(Some(&parent_tree), Some(&tree), None)?;
+            .diff_tree_to_tree(parent_tree.as_ref(), Some(&tree), None)?;
 
         let mut file_paths = Vec::new();
         diff.foreach(
