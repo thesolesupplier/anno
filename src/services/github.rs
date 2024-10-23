@@ -145,7 +145,7 @@ impl Repository {
     ) -> Result<Vec<String>> {
         tracing::info!("Fetching commits between {from} - {to}");
 
-        // We get all commit messages and return early if no app_name is provided
+        // We get all commit messages and return early if no target_paths is provided
         // because we know its not a mono-repo and they are all relevant.
         let Some(target_paths) = target_paths else {
             let messages = self
@@ -158,8 +158,8 @@ impl Repository {
             return Ok(messages);
         };
 
-        // If an app_name is provided, first we get all commits that affected
-        // files with the app_name in their `/apps` or `/packages` paths.
+        // If target_paths is provided, first we get all commits that affected
+        // files with the any of the target_paths in their paths.
         let mut messages = HashSet::new();
 
         for path in target_paths {
@@ -171,7 +171,7 @@ impl Repository {
         }
 
         // Then we get all commits and filter for PR merges because for some reason
-        // the GitHub API excludes these from its response when queried by path.
+        // the GitHub API excludes these from its response when querying by path.
         let pr_merge_commits: Vec<Commit> = self
             .list_commits(&[("since", from), ("until", to)])
             .await?
@@ -182,7 +182,7 @@ impl Repository {
         let pr_regex = Regex::new(r"#(\d+)").unwrap();
 
         // Finally we check each PR number to see if it affected any files with
-        // the app_name in their paths and include the commit message if it did.
+        // the target_paths in their paths and include the commit message if it did.
         for Commit { commit } in &pr_merge_commits {
             let Some(pr_number) = pr_regex
                 .captures(&commit.message)
