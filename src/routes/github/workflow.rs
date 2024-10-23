@@ -104,11 +104,13 @@ async fn get_jira_issues(commit_messages: &[String]) -> Result<Vec<Issue>> {
         .map(Issue::get_by_key)
         .collect();
 
-    let issues = try_join_all(requests)
+    let mut issues: Vec<_> = try_join_all(requests)
         .await?
         .into_iter()
         .flatten()
         .collect();
+
+    issues.sort_by(|a, b| a.key.cmp(&b.key));
 
     Ok(issues)
 }
@@ -129,11 +131,13 @@ async fn get_pull_requests<'a>(
         .map(|id| repo.get_pull_request(id))
         .collect();
 
-    let pull_requests = try_join_all(requests)
+    let mut pull_requests: Vec<_> = try_join_all(requests)
         .await?
         .into_iter()
         .flatten()
         .collect();
+
+    pull_requests.sort_by_key(|pr| pr.number);
 
     Ok(pull_requests)
 }
