@@ -39,7 +39,7 @@ impl JiraIssueEvent {
         self.changelog
             .items
             .iter()
-            .any(|i| i.is_to_refinement_status() || i.is_to_review_status())
+            .any(|i| i.is_to_refinement_status() || i.is_to_holding_bay_status())
     }
 }
 
@@ -58,11 +58,14 @@ pub struct JiraChangeLogItem {
 
 impl JiraChangeLogItem {
     pub fn is_to_refinement_status(&self) -> bool {
-        !self.is_from_status("Review & Estimate") && self.is_to_status("In Refinement")
+        (self.is_from_status("Next")
+            || self.is_from_status("Ready to Scope")
+            || self.is_from_status("Ready to Refine"))
+            && self.is_to_status("In Refinement")
     }
 
-    pub fn is_to_review_status(&self) -> bool {
-        !self.is_from_status("Holding Bay") && self.is_to_status("Review & Estimate")
+    pub fn is_to_holding_bay_status(&self) -> bool {
+        !self.is_from_status("Ready to Dev") && self.is_to_status("Holding Bay")
     }
 
     fn is_to_status(&self, status: &str) -> bool {
