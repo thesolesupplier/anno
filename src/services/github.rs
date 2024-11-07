@@ -22,9 +22,9 @@ const IGNORED_REPO_PATHS: [&str; 9] = [
     ".github",
     "build",
     "Cargo.lock",
-    "Cargo.toml",
     "coverage",
     "dist",
+    "target",
     "node_modules",
     "package-lock.json",
     "yarn.lock",
@@ -159,7 +159,7 @@ impl Repository {
         };
 
         // If target_paths is provided, first we get all commits that affected
-        // files with the any of the target_paths in their paths.
+        // files with any of the target_paths in their paths.
         let mut messages = HashSet::new();
 
         for path in target_paths {
@@ -170,8 +170,8 @@ impl Repository {
             }
         }
 
-        // Then we get all commits and filter for PR merges because for some reason
-        // the GitHub API excludes these from its response when querying by path.
+        // Then we get all commits and filter for PR merges because the GitHub API
+        // excludes these from its response when querying by path.
         let pr_merge_commits: Vec<Commit> = self
             .list_commits(&[("since", from), ("until", to)])
             .await?
@@ -179,14 +179,14 @@ impl Repository {
             .filter(|c| c.commit.message.starts_with("Merge pull request"))
             .collect();
 
-        let pr_regex = Regex::new(r"#(\d+)").unwrap();
+        let pr_number_regex = Regex::new(r"#(\d+)").unwrap();
 
         // Finally we check each PR number to see if it affected any files with
         // the target_paths in their paths and include the commit message if it did.
         for Commit { commit } in &pr_merge_commits {
-            let Some(pr_number) = pr_regex
+            let Some(pr_number) = pr_number_regex
                 .captures(&commit.message)
-                .and_then(|c| Some(c.get(1)?.as_str()))
+                .and_then(|c| c.get(1).map(|f| f.as_str()))
             else {
                 continue;
             };
@@ -199,10 +199,11 @@ impl Repository {
                     break;
                 }
 
-                if files
+                let has_affected_target_files = files
                     .iter()
-                    .any(|f| target_paths.iter().any(|p| f.filename.contains(p)))
-                {
+                    .any(|f| target_paths.iter().any(|p| f.filename.contains(p)));
+
+                if has_affected_target_files {
                     messages.insert(commit.message.clone());
                     break;
                 }
