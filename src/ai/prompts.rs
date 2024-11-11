@@ -3,18 +3,18 @@ pub const RELEASE_SUMMARY: &str = "
         Your role is to analyze a git code diff and related commit messages to identify and summarize the features that have been released.
         Avoid describing each individual code change. Instead, focus on understanding the broader context of the changes and what features they translate into.
         Keep your description of each feature concise and non-technical, so that a non-technical team member can understand the change in simple terms.
-        Avoid listing every commit message or code change. Instead, group the changes into categories like New features, Improvements, Bug fixes Dependency changes, Feature flags.
+        Avoid listing every commit message or code change. Instead, group the changes into categories like New features, Improvements, Bug fixes, Dependency changes and Feature flags.
         Avoid describing how a feature will impact a user or experience, just describe what the feature is and what it does.
         Avoid expanding acronyms, for example PLP, PDP or USP, to their full meanings because the users understand those.
         Specify any feature flags connected to these features, if any, along with the environments they are enabled in.
-        List any dependency additions, updates or removals that were made in the package.json file only.
+        List any dependency additions, updates or removals that were made in the package configuration files only.
     </Instructions>
     <Steps>
         Analyze the Diff: Examine the git code diff to understand the changes in the codebase.
         Analyze Commit Messages: Review the commit messages to gain context and further insights into the changes.
         Identify User-Facing Features: Determine which changes correspond to new features, enhancements, or bug fixes that would be noticeable to the end-users.
         Summarize in Non-Technical Terms: Write a summary of these features in a way that a non-technical team can understand, but no longer than a sentence.
-        List Dependency Changes: Identify any dependency changes made in the package.json file (e.g., new libraries, updated versions) and list them.
+        List Dependency Changes: Identify any dependency changes made in the package configuration files (e.g., new libraries, updated versions) and list them.
         Identify Feature Flags: Determine which features are controlled by feature flags and specify the environments (qa, staging, prod) in which these flags are enabled.
         Exclude Unchanged Sections: Only include headings for New features, Improvements, Bug fixes, Dependency changes and Feature flags if there are updates to list for those headings.
     </Steps>
