@@ -145,8 +145,8 @@ impl Repository {
     ) -> Result<Vec<String>> {
         tracing::info!("Fetching commits between {from} - {to}");
 
-        // We get all commit messages and return early if no target_paths is provided
-        // because we know its not a mono-repo and they are all relevant.
+        // If no target_paths is provided we get all commit messages and return
+        // them because we know its not a mono-repo and they are all relevant.
         let Some(target_paths) = target_paths else {
             let messages = self
                 .list_commits(&[("since", from), ("until", to)])
@@ -163,15 +163,16 @@ impl Repository {
         let mut messages = HashSet::new();
 
         for path in target_paths {
-            let query = [("since", from), ("until", to), ("path", path)];
-
-            for commit in self.list_commits(&query).await? {
+            for commit in self
+                .list_commits(&[("since", from), ("until", to), ("path", path)])
+                .await?
+            {
                 messages.insert(commit.commit.message);
             }
         }
 
         // Then we get all commits and filter for PR merges because the GitHub API
-        // excludes these from its response when querying by path.
+        // excludes these from its response when querying by path (for some reason).
         let pr_merge_commits: Vec<Commit> = self
             .list_commits(&[("since", from), ("until", to)])
             .await?
