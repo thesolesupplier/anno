@@ -40,10 +40,6 @@ pub async fn post_release_message(
     let mut message_blocks: Vec<serde_json::Value> =
         Vec::from([get_header_block(app_name, workflow_run)]);
 
-    if app_name.is_some() {
-        message_blocks.push(get_repo_block(&workflow_run.repository.name));
-    }
-
     message_blocks.push(json!({ "type": "divider" }));
     message_blocks.push(get_summary_block(&summary));
 
@@ -86,18 +82,6 @@ fn get_header_block(app_name: Option<&str>, run: &WorkflowRun) -> serde_json::Va
             "text": format!("{app_name} release :rocket:",),
             "emoji": true
         }
-    })
-}
-
-fn get_repo_block(repo_name: &str) -> serde_json::Value {
-    json!({
-        "type": "context",
-        "elements": [
-            {
-                "type": "mrkdwn",
-                "text": format!("*Repo*: {repo_name}")
-            }
-        ]
     })
 }
 
