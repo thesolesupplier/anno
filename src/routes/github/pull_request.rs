@@ -57,10 +57,12 @@ pub async fn bug_analysis(
     tracing::info!("Processing {} pull request #{}", repo.name, pr.title);
 
     if pr.user.is_bot() {
+        tracing::info!("Is a bot, skipping");
         return Ok(StatusCode::OK);
     }
 
     if action != "opened" && action != "synchronize" {
+        tracing::info!("Is ignored action '{action}', skipping");
         return Ok(StatusCode::OK);
     }
 

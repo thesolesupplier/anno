@@ -70,8 +70,8 @@ impl Repository {
         Ok(Some(pull_request))
     }
 
-    pub async fn get_file(&self, path: &str, sha: &str) -> Result<RepoFile> {
-        tracing::info!("Fetching file {path} for {sha}");
+    pub async fn get_file(&self, path: &str) -> Result<RepoFile> {
+        tracing::info!("Fetching file {path}");
 
         let gh_token = AccessToken::get().await?;
         let url = self.contents_url.replace("{+path}", path);
@@ -81,7 +81,6 @@ impl Repository {
             .bearer_auth(gh_token)
             .header("Accept", "application/json")
             .header("User-Agent", "Anno")
-            .query(&[("ref", sha)])
             .send()
             .await?
             .error_for_status()
@@ -313,14 +312,23 @@ impl WorkflowConfig {
     }
 
     pub fn get_app_name(&self) -> Option<&str> {
-        self.env.as_ref()?.anno_app_name.as_deref()
+        self.env.as_ref()?.app_name.as_deref()
+    }
+
+    pub fn has_summary_enabled(&self) -> bool {
+        self.env
+            .as_ref()
+            .and_then(|e| e.summary_enabled.as_ref().map(|e| e == "true"))
+            .unwrap_or(false)
     }
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 struct WorkflowEnvVariables {
-    anno_app_name: Option<String>,
+    #[serde(rename = "ANNO_APP_NAME")]
+    app_name: Option<String>,
+    #[serde(rename = "ANNO_SUMMARY_ENABLED")]
+    summary_enabled: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -608,16 +616,11 @@ pub struct WorkflowRun {
     path: String,
     created_at: String,
     conclusion: Option<String>,
-    head_branch: String,
     html_url: String,
     previous_attempt_url: Option<String>,
 }
 
 impl WorkflowRun {
-    pub fn is_on_master(&self) -> bool {
-        self.head_branch == "master" || self.head_branch == "main"
-    }
-
     pub fn is_successful_attempt(&self) -> bool {
         self.conclusion.as_ref().is_some_and(|c| c == "success")
     }
@@ -683,7 +686,7 @@ impl WorkflowRun {
     }
 
     pub async fn get_config(&self) -> Result<WorkflowConfig> {
-        let config_file = self.repository.get_file(&self.path, &self.head_sha).await?;
+        let config_file = self.repository.get_file(&self.path).await?;
         let config = WorkflowConfig::from_base64_str(&config_file.content)?;
 
         Ok(config)

@@ -24,16 +24,23 @@ pub async fn release_summary(
 ) -> Result<StatusCode, AppError> {
     tracing::info!("Processing {} run {}", run.repository.name, run.name);
 
-    if !run.is_on_master() || !run.is_first_successful_attempt().await? {
+    if !run.is_first_successful_attempt().await? {
+        tracing::info!("Unsuccessful attempt, skipping");
+        return Ok(StatusCode::OK);
+    }
+
+    let workflow_config = run.get_config().await?;
+
+    if !workflow_config.has_summary_enabled() {
+        tracing::info!("Summary not enabled, skipping");
         return Ok(StatusCode::OK);
     }
 
     let Some(prev_run) = WorkflowRuns::get_prev_successful_run(&run).await? else {
+        tracing::info!("No previous successful run, skipping");
         return Ok(StatusCode::OK);
     };
 
-    let workflow_config = run.get_config().await?;
-    let app_name = workflow_config.get_app_name();
     let target_paths = workflow_config.get_target_paths();
 
     let new_commit = &run.head_sha;
@@ -62,7 +69,7 @@ pub async fn release_summary(
     let summary = ai::ChatGpt::get_release_summary(&diff, &commit_messages).await?;
 
     slack::post_release_message(slack::MessageInput {
-        app_name,
+        app_name: workflow_config.get_app_name(),
         jira_issues,
         prev_run: &prev_run,
         pull_requests,
