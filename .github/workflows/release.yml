@@ -10,6 +10,10 @@ on:
       - 'Cargo.lock'
       - '.github/**'
 
+env:
+  ANNO_SUMMARY_ENABLED: true
+  ANNO_APP_NAME: Anno
+
 jobs:
   cargo_check:
     name: Cargo Clippy

@@ -178,5 +178,5 @@ pub struct CommentAuthor {
 #[derive(Deserialize)]
 pub struct IssueFields {
     pub summary: String,
-    pub description: String,
+    pub description: Option<String>,
 }

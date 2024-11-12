@@ -12,7 +12,9 @@ pub async fn status(JiraEvent(event): JiraEvent<JiraIssueEvent>) -> Result<Statu
         return Ok(StatusCode::OK);
     }
 
-    let issue_description = &event.issue.fields.description;
+    let Some(issue_description) = &event.issue.fields.description else {
+        return Ok(StatusCode::OK);
+    };
 
     if issue_description.is_empty() {
         return Ok(StatusCode::OK);
