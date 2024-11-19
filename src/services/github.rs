@@ -591,7 +591,6 @@ impl WorkflowRuns {
             .header("User-Agent", "Anno")
             .query(&[
                 ("branch", "master"),
-                ("event", "push"),
                 ("created", &format!("<{}", run.created_at)),
                 ("page", &page.to_string()),
             ])
