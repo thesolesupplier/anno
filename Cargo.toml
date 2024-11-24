@@ -1,6 +1,7 @@
 [workspace]
 default-members = [
   "api",
+  "github_action",
 ]
 members = [
   "api",
