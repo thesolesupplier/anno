@@ -1,4 +1,4 @@
-name: Release
+name: Release API
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
       - shared/**
       - Cargo.toml
       - Cargo.lock
-      - .github/workflows/release.yml
+      - .github/workflows/release-api.yml
 
 env:
   ANNO_SUMMARY_ENABLED: true
