@@ -1,11 +1,11 @@
 use crate::middleware::validation::JiraEvent;
-use common::{
+use hyper::StatusCode;
+use serde::Deserialize;
+use shared::{
     ai::{ChatGpt, IssueTestCasing},
     services::jira::Issue,
     utils::error::AppError,
 };
-use hyper::StatusCode;
-use serde::Deserialize;
 
 pub async fn status(JiraEvent(event): JiraEvent<JiraIssueEvent>) -> Result<StatusCode, AppError> {
     if !event.should_trigger_test_cases() {

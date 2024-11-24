@@ -1,11 +1,11 @@
 [package]
 edition = "2021"
-name = "github_action"
+name = "action"
 version = "0.1.0"
 
 [dependencies]
 anyhow.workspace = true
-common.workspace = true
 dotenv.workspace = true
+shared.workspace = true
 tokio.workspace = true
 tracing.workspace = true

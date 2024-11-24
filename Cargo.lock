@@ -3,6 +3,17 @@
 version = 3
 
 [[package]]
+name = "action"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "dotenv",
+ "shared",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "addr2line"
 version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -55,7 +66,6 @@ dependencies = [
  "axum",
  "axum-aws-lambda",
  "chrono",
- "common",
  "hex",
  "hmac-sha256",
  "hyper",
@@ -63,6 +73,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_path_to_error",
+ "shared",
  "subtle",
  "time",
  "tokio",
@@ -295,31 +306,6 @@ dependencies = [
  "num-traits",
  "wasm-bindgen",
  "windows-targets",
-]
-
-[[package]]
-name = "common"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "axum",
- "base64 0.22.1",
- "chrono",
- "dotenv",
- "futures",
- "git2",
- "hex",
- "hyper",
- "jsonwebtoken",
- "openssl",
- "regex-lite",
- "reqwest",
- "serde",
- "serde_json",
- "serde_path_to_error",
- "serde_yaml",
- "tokio",
- "tracing",
 ]
 
 [[package]]
@@ -565,17 +551,6 @@ dependencies = [
  "openssl-probe",
  "openssl-sys",
  "url",
-]
-
-[[package]]
-name = "github_action"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "common",
- "dotenv",
- "tokio",
- "tracing",
 ]
 
 [[package]]
@@ -1679,6 +1654,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f40ca3c46823713e0d4209592e8d6e826aa57e928f09752619fc696c499637f6"
 dependencies = [
  "lazy_static",
+]
+
+[[package]]
+name = "shared"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "base64 0.22.1",
+ "chrono",
+ "dotenv",
+ "futures",
+ "git2",
+ "hex",
+ "hyper",
+ "jsonwebtoken",
+ "openssl",
+ "regex-lite",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "serde_path_to_error",
+ "serde_yaml",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]

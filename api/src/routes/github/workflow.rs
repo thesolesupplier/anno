@@ -1,7 +1,7 @@
 use crate::middleware::validation::GithubEvent;
 use anyhow::Result;
 use chrono::{DateTime, Duration, SecondsFormat};
-use common::{
+use shared::{
     ai::{self, ReleaseSummary},
     services::{
         github::{WorkflowRun, WorkflowRuns},

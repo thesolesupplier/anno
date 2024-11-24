@@ -1,5 +1,7 @@
 use crate::middleware::validation::GithubEvent;
-use common::{
+use hyper::StatusCode;
+use serde::Deserialize;
+use shared::{
     ai::{self, PrAdrAnalysis, PrBugAnalysis},
     services::{
         github::{PullRequest, Repository},
@@ -7,8 +9,6 @@ use common::{
     },
     utils::{config, error::AppError},
 };
-use hyper::StatusCode;
-use serde::Deserialize;
 
 pub async fn adr_analysis(
     GithubEvent(PullRequestEvent {

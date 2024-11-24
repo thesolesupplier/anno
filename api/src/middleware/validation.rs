@@ -4,7 +4,7 @@ use axum::{
     extract::{FromRequest, Request},
     http::HeaderValue,
 };
-use common::utils::config;
+use shared::utils::config;
 use hmac_sha256::HMAC;
 use hyper::StatusCode;
 use serde::de::DeserializeOwned;

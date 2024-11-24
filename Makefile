@@ -1,5 +1,5 @@
 dev:
-	cargo watch -x run --no-vcs-ignores
+	cargo watch -x "run --bin api" --no-vcs-ignores
 
 build:
 	cargo lambda build --release --bin api

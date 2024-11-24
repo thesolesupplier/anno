@@ -1,5 +1,5 @@
 use anyhow::Result;
-use common::{
+use shared::{
     ai::{self, ReleaseSummary},
     services::{
         github::{WorkflowRun, WorkflowRuns},

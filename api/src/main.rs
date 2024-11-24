@@ -3,7 +3,7 @@ mod routes;
 
 use axum::http::header::{ACCEPT, ACCEPT_ENCODING, AUTHORIZATION, CONTENT_TYPE, ORIGIN};
 use axum::{routing::post, Router};
-use common::utils::config;
+use shared::utils::config;
 use std::str::FromStr;
 use tower_http::{compression::CompressionLayer, cors::CorsLayer, trace::TraceLayer};
 use tracing::Level;
