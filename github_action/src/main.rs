@@ -10,6 +10,8 @@ use common::{
 
 #[tokio::main]
 async fn main() -> Result<(), AppError> {
+    config::load();
+
     let repo = config::get("GITHUB_REPOSITORY").unwrap();
     let run_id = config::get("GITHUB_RUN_ID").unwrap();
     let app_name = config::get("APP_NAME").ok();

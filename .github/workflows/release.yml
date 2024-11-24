@@ -48,8 +48,7 @@ jobs:
       - name: Release lambda
         run: |
           pip install cargo-lambda
-          cargo lambda build --release
-          cargo lambda deploy --enable-function-url \
+          make release
             --env-var ADR_REPO_FULL_NAME=The-Sole-Supplier/ADRs \
             --env-var CLAUDE_API_KEY=${{ secrets.CLAUDE_API_KEY }} \
             --env-var CLAUDE_BASE_URL=https://api.anthropic.com \
