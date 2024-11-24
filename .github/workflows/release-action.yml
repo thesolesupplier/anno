@@ -50,7 +50,7 @@ jobs:
       - name: Store Archive
         uses: actions/upload-artifact@v4
         with:
-          name: ${{runner.os}}
+          name: ${{ runner.os }}
           path: ${{ runner.os }}.tgz
 
   create-release:
@@ -66,4 +66,4 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           artifacts: "Linux/Linux.tgz,macOS/macOS.tgz,Windows/Windows.tgz"
-          tag: v${{ github.event.release.tag_name }}
+          tag: ${{ github.event.release.tag_name }}
