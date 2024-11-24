@@ -5,10 +5,11 @@ on:
     branches:
       - master
     paths:
-      - 'src/**'
-      - 'Cargo.toml'
-      - 'Cargo.lock'
-      - '.github/**'
+      - api/**
+      - shared/**
+      - Cargo.toml
+      - Cargo.lock
+      - .github/workflows/release.yml
 
 env:
   ANNO_SUMMARY_ENABLED: true
