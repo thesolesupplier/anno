@@ -53,7 +53,7 @@ impl Issue {
         if !jira_comment_enabled {
             println!("------ JIRA COMMENT ------");
             println!("{body}");
-            println!("------------------------");
+            println!("--------------------------");
             return Ok(());
         }
 

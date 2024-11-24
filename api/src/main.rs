@@ -1,16 +1,13 @@
-mod ai;
 mod middleware;
 mod routes;
-mod services;
-mod utils;
 
 use axum::http::header::{ACCEPT, ACCEPT_ENCODING, AUTHORIZATION, CONTENT_TYPE, ORIGIN};
 use axum::{routing::post, Router};
+use common::utils::config;
 use std::str::FromStr;
 use tower_http::{compression::CompressionLayer, cors::CorsLayer, trace::TraceLayer};
 use tracing::Level;
 use tracing_subscriber::fmt;
-use utils::config;
 
 #[tokio::main]
 async fn main() {
