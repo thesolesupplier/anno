@@ -1,3 +1,5 @@
+#![allow(async_fn_in_trait)]
+
 mod chat_gpt;
 mod claude;
 mod prompts;

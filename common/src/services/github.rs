@@ -592,6 +592,7 @@ impl WorkflowRuns {
             .query(&[
                 ("branch", "master"),
                 ("created", &format!("<{}", run.created_at)),
+                ("exclude_pull_requests", "true"),
                 ("page", &page.to_string()),
             ])
             .send()
@@ -620,6 +621,27 @@ pub struct WorkflowRun {
 }
 
 impl WorkflowRun {
+    pub async fn get_by_id(full_repo_name: &String, run_id: &String) -> Result<Self> {
+        tracing::info!("Fetching workflow run '{run_id}'");
+
+        let gh_token = AccessToken::get().await?;
+        let url = format!("https://api.github.com/repos/{full_repo_name}/actions/runs/{run_id}");
+
+        let workflow_run = reqwest::Client::new()
+            .get(url)
+            .bearer_auth(gh_token)
+            .header("Accept", "application/json")
+            .header("User-Agent", "Anno")
+            .send()
+            .await?
+            .error_for_status()
+            .inspect_err(|e| tracing::error!("Error getting workflow run: {e}"))?
+            .json::<Self>()
+            .await?;
+
+        Ok(workflow_run)
+    }
+
     pub fn is_successful_attempt(&self) -> bool {
         self.conclusion.as_ref().is_some_and(|c| c == "success")
     }
@@ -723,6 +745,11 @@ impl AccessToken {
     }
 
     async fn fetch() -> Result<String> {
+        // Use token set by Github in an action context if available
+        if let Ok(github_token) = config::get("GITHUB_TOKEN") {
+            return Ok(github_token);
+        }
+
         let gh_base_url = config::get("GITHUB_BASE_URL")?;
         let gh_app_install_id = config::get("GITHUB_APP_INSTALLATION_ID")?;
 

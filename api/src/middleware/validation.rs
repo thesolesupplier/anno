@@ -1,10 +1,10 @@
-use crate::utils::config;
 use axum::{
     async_trait,
     body::Bytes,
     extract::{FromRequest, Request},
     http::HeaderValue,
 };
+use common::utils::config;
 use hmac_sha256::HMAC;
 use hyper::StatusCode;
 use serde::de::DeserializeOwned;

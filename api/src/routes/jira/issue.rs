@@ -1,6 +1,6 @@
-use crate::{
+use crate::middleware::validation::JiraEvent;
+use common::{
     ai::{ChatGpt, IssueTestCasing},
-    middleware::validation::JiraEvent,
     services::jira::Issue,
     utils::error::AppError,
 };

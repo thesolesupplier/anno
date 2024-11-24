@@ -1,6 +1,6 @@
-use crate::{
+use crate::middleware::validation::GithubEvent;
+use common::{
     ai::{self, PrAdrAnalysis, PrBugAnalysis},
-    middleware::validation::GithubEvent,
     services::{
         github::{PullRequest, Repository},
         Git,

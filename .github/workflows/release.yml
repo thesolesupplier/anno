@@ -51,8 +51,8 @@ jobs:
           cargo lambda build --release
           cargo lambda deploy --enable-function-url \
             --env-var ADR_REPO_FULL_NAME=The-Sole-Supplier/ADRs \
-            --env-var ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }} \
-            --env-var ANTHROPIC_BASE_URL=https://api.anthropic.com \
+            --env-var CLAUDE_API_KEY=${{ secrets.CLAUDE_API_KEY }} \
+            --env-var CLAUDE_BASE_URL=https://api.anthropic.com \
             --env-var CHAT_GPT_MODEL=gpt-4o-2024-08-06 \
             --env-var CLAUDE_MODEL=claude-3-5-sonnet-20241022 \
             --env-var GITHUB_APP_ID=952862 \
@@ -67,8 +67,8 @@ jobs:
             --env-var JIRA_COMMENT_ENABLED=true \
             --env-var JIRA_WEBHOOK_SECRET=${{ secrets.JIRA_WEBHOOK_SECRET }} \
             --env-var LOG_LEVEL=INFO \
-            --env-var OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
-            --env-var OPENAI_BASE_URL=https://api.openai.com/v1 \
+            --env-var CHAT_GPT_API_KEY=${{ secrets.CHAT_GPT_API_KEY }} \
+            --env-var CHAT_GPT_BASE_URL=https://api.openai.com/v1 \
             --env-var PR_COMMENT_ENABLED=true \
             --env-var REPOS_DIR=/tmp/repos \
             --env-var SLACK_MESSAGE_ENABLED=true \

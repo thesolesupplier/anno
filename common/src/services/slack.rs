@@ -29,7 +29,7 @@ pub async fn post_release_message(
     if !send_slack_msg {
         println!("------ SLACK MESSAGE ------");
         println!("{summary}");
-        println!("------ END SLACK MESSAGE ------");
+        println!("---- END SLACK MESSAGE ----");
         return Ok(());
     }
 

@@ -1,20 +1,16 @@
-use crate::{
-    ai::{self, ReleaseSummary},
-    middleware::validation::GithubEvent,
-    services::{
-        github::{PullRequest, Repository, WorkflowRun, WorkflowRuns},
-        jira::Issue,
-        slack, Git,
-    },
-    utils::error::AppError,
-};
+use crate::middleware::validation::GithubEvent;
 use anyhow::Result;
 use chrono::{DateTime, Duration, SecondsFormat};
-use futures::future::try_join_all;
+use common::{
+    ai::{self, ReleaseSummary},
+    services::{
+        github::{WorkflowRun, WorkflowRuns},
+        slack, Git,
+    },
+    utils::{commits, error::AppError},
+};
 use hyper::StatusCode;
-use regex_lite::Regex;
 use serde::Deserialize;
-use std::{collections::HashSet, sync::OnceLock};
 
 pub async fn release_summary(
     GithubEvent(WorkflowEvent {
@@ -64,8 +60,8 @@ pub async fn release_summary(
             .get_commit_messages(old_commit, new_commit, &target_paths)?
     };
 
-    let jira_issues = get_jira_issues(&commit_messages).await?;
-    let pull_requests = get_pull_requests(&run.repository, &commit_messages).await?;
+    let jira_issues = commits::get_jira_issues(&commit_messages).await?;
+    let pull_requests = commits::get_pull_requests(&run.repository, &commit_messages).await?;
     let summary = ai::ChatGpt::get_release_summary(&diff, &commit_messages).await?;
 
     slack::post_release_message(slack::MessageInput {
@@ -96,57 +92,6 @@ impl WorkflowEventRepository {
     pub fn is_too_large_to_clone(&self) -> bool {
         self.size > 60_000
     }
-}
-
-static JIRA_ISSUE_REGEX: OnceLock<Regex> = OnceLock::new();
-
-async fn get_jira_issues(commit_messages: &[String]) -> Result<Vec<Issue>> {
-    let issue_regex = JIRA_ISSUE_REGEX.get_or_init(|| Regex::new(r"TFW-\d+").unwrap());
-
-    let requests: Vec<_> = commit_messages
-        .iter()
-        .filter_map(|m| issue_regex.find(m).map(|i| i.as_str()))
-        .collect::<HashSet<&str>>()
-        .into_iter()
-        .map(Issue::get_by_key)
-        .collect();
-
-    let mut issues: Vec<_> = try_join_all(requests)
-        .await?
-        .into_iter()
-        .flatten()
-        .collect();
-
-    issues.sort_by(|a, b| a.key.cmp(&b.key));
-
-    Ok(issues)
-}
-
-static PR_REGEX: OnceLock<Regex> = OnceLock::new();
-
-async fn get_pull_requests<'a>(
-    repo: &'a Repository,
-    commit_messages: &'a [String],
-) -> Result<Vec<PullRequest>> {
-    let pr_regex = PR_REGEX.get_or_init(|| Regex::new(r"#(\d+)").unwrap());
-
-    let requests: Vec<_> = commit_messages
-        .iter()
-        .filter_map(|m| pr_regex.captures(m).and_then(|c| Some(c.get(1)?.as_str())))
-        .collect::<HashSet<&str>>()
-        .into_iter()
-        .map(|id| repo.get_pull_request(id))
-        .collect();
-
-    let mut pull_requests: Vec<_> = try_join_all(requests)
-        .await?
-        .into_iter()
-        .flatten()
-        .collect();
-
-    pull_requests.sort_by_key(|pr| pr.number);
-
-    Ok(pull_requests)
 }
 
 fn increment_by_one_second(date: &str) -> Result<String> {

@@ -1,0 +1,69 @@
+name: Release Action
+
+on:
+  release:
+    types: [released]
+
+jobs:
+  build-artifacts:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            file_extension: .exe
+
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.target }}
+    env:
+      binary_name: github_action${{ matrix.file_extension }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install host target
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Install musl-tools
+        if: ${{ matrix.target == 'x86_64-unknown-linux-musl' }}
+        run: sudo apt-get install -y musl-tools
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Create Archive Folder
+        run: mkdir ${{ runner.os }}
+
+      - name: Copy Artifact
+        run: cp target/${{ matrix.target }}/release/${{ env.binary_name }} ${{ runner.os }}
+
+      - name: Create Tar Archive
+        run: tar -czf ${{ runner.os }}.tgz ${{ runner.os }}
+
+      - name: Store Archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{runner.os}}
+          path: ${{ runner.os }}.tgz
+
+  create-release:
+    needs: [build-artifacts]
+    runs-on: ubuntu-latest
+    name: Create Release
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "Linux/Linux.tgz,macOS/macOS.tgz,Windows/Windows.tgz"
+          tag: v${{ github.event.release.tag_name }}
