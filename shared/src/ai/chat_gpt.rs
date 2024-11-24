@@ -8,9 +8,9 @@ pub struct ChatGpt;
 
 impl Ai for ChatGpt {
     async fn make_request(system_input: &str, user_input: String) -> Result<String> {
-        let base_url = config::get("CHAT_GPT_BASE_URL")?;
-        let api_key = config::get("CHAT_GPT_API_KEY")?;
-        let model = config::get("CHAT_GPT_MODEL")?;
+        let base_url = config::get("CHAT_GPT_BASE_URL");
+        let api_key = config::get("CHAT_GPT_API_KEY");
+        let model = config::get("CHAT_GPT_MODEL");
 
         let mut response = reqwest::Client::new()
             .post(format!("{base_url}/chat/completions"))

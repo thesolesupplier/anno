@@ -13,7 +13,7 @@ use tracing_subscriber::fmt;
 async fn main() {
     config::load();
 
-    let log_level = config::get("LOG_LEVEL").unwrap();
+    let log_level = config::get_optional("LOG_LEVEL").unwrap_or_else(|| "info".to_string());
 
     let timer = time::format_description::parse("[hour]:[minute]:[second]").expect("Valid time");
     let time_offset = time::UtcOffset::current_local_offset().unwrap_or(time::UtcOffset::UTC);

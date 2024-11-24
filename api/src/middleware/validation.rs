@@ -4,10 +4,10 @@ use axum::{
     extract::{FromRequest, Request},
     http::HeaderValue,
 };
-use shared::utils::config;
 use hmac_sha256::HMAC;
 use hyper::StatusCode;
 use serde::de::DeserializeOwned;
+use shared::utils::config;
 use subtle::ConstantTimeEq;
 
 pub struct GithubEvent<T>(pub T);
@@ -21,14 +21,14 @@ where
     type Rejection = (StatusCode, &'static str);
 
     async fn from_request(req: Request, _: &S) -> Result<Self, Self::Rejection> {
-        let validate = config::get("WEBHOOK_VALIDATION").is_ok_and(|v| v == "true");
+        let validate = config::get("WEBHOOK_VALIDATION") == "true";
 
         let (parts, body) = req.into_parts();
 
         let body_as_bytes = convert_body_to_bytes(body).await?;
 
         if validate {
-            let token = config::get("GITHUB_WEBHOOK_SECRET").unwrap();
+            let token = config::get("GITHUB_WEBHOOK_SECRET");
             let signature = parts.headers.get("X-Hub-Signature-256");
 
             validate_body(signature, &body_as_bytes, token).await?;
@@ -51,14 +51,14 @@ where
     type Rejection = (StatusCode, &'static str);
 
     async fn from_request(req: Request, _: &S) -> Result<Self, Self::Rejection> {
-        let validate = config::get("WEBHOOK_VALIDATION").is_ok_and(|v| v == "true");
+        let validate = config::get("WEBHOOK_VALIDATION") == "true";
 
         let (parts, body) = req.into_parts();
 
         let body_as_bytes = convert_body_to_bytes(body).await?;
 
         if validate {
-            let token = config::get("JIRA_WEBHOOK_SECRET").unwrap();
+            let token = config::get("JIRA_WEBHOOK_SECRET");
             let signature = parts.headers.get("x-hub-signature");
 
             validate_body(signature, &body_as_bytes, token).await?;

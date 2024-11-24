@@ -5,8 +5,8 @@ use jsonwebtoken::{Algorithm::RS256, EncodingKey, Header};
 use serde::{Deserialize, Serialize};
 
 pub fn create_github_token() -> String {
-    let gh_app_id = config::get("GITHUB_APP_ID").unwrap();
-    let gh_app_private_key_base64 = config::get("GITHUB_APP_PRIVATE_KEY_BASE64").unwrap();
+    let gh_app_id = config::get("GITHUB_APP_ID");
+    let gh_app_private_key_base64 = config::get("GITHUB_APP_PRIVATE_KEY_BASE64");
 
     let private_key = BASE64_STANDARD
         .decode(gh_app_private_key_base64)

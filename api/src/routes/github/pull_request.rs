@@ -19,7 +19,7 @@ pub async fn adr_analysis(
 ) -> Result<StatusCode, AppError> {
     tracing::info!("Processing {} pull request #{}", repo.name, pr.title);
 
-    let adr_repo_full_name = config::get("ADR_REPO_FULL_NAME")?;
+    let adr_repo_full_name = config::get("ADR_REPO_FULL_NAME");
 
     if pr.user.is_bot() {
         return Ok(StatusCode::OK);

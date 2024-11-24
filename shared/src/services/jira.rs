@@ -13,8 +13,8 @@ pub struct Issue {
 
 impl Issue {
     pub async fn get_by_key(key: &str) -> Result<Option<Self>> {
-        let jira_base_url = config::get("JIRA_BASE_URL")?;
-        let jira_api_key = config::get("JIRA_API_KEY")?;
+        let jira_base_url = config::get("JIRA_BASE_URL");
+        let jira_api_key = config::get("JIRA_API_KEY");
 
         let response = match reqwest::Client::new()
             .get(format!("{jira_base_url}/rest/api/2/issue/{key}"))
@@ -42,13 +42,13 @@ impl Issue {
     }
 
     pub fn get_browse_url(&self) -> String {
-        let jira_base_url = config::get("JIRA_BASE_URL").unwrap();
+        let jira_base_url = config::get("JIRA_BASE_URL");
         format!("{jira_base_url}/browse/{}", self.key)
     }
 
     pub async fn add_comment(&self, body: &str) -> Result<()> {
-        let jira_base_url = config::get("JIRA_BASE_URL").unwrap();
-        let jira_comment_enabled = config::get("JIRA_COMMENT_ENABLED").is_ok_and(|v| v == "true");
+        let jira_base_url = config::get("JIRA_BASE_URL");
+        let jira_comment_enabled = config::get("JIRA_COMMENT_ENABLED") == "true";
 
         if !jira_comment_enabled {
             println!("------ JIRA COMMENT ------");
@@ -57,7 +57,7 @@ impl Issue {
             return Ok(());
         }
 
-        let jira_api_key = config::get("JIRA_API_KEY")?;
+        let jira_api_key = config::get("JIRA_API_KEY");
 
         reqwest::Client::new()
             .post(format!(
@@ -87,7 +87,7 @@ impl Issue {
     }
 
     pub async fn delete_outdated_comments(&self) -> Result<()> {
-        let jira_comment_enabled = config::get("JIRA_COMMENT_ENABLED").is_ok_and(|v| v == "true");
+        let jira_comment_enabled = config::get("JIRA_COMMENT_ENABLED") == "true";
 
         if !jira_comment_enabled {
             return Ok(());
@@ -110,8 +110,8 @@ impl Issue {
     }
 
     async fn get_comments(&self) -> Result<Vec<IssueComment>> {
-        let jira_base_url = config::get("JIRA_BASE_URL").unwrap();
-        let jira_api_key = config::get("JIRA_API_KEY")?;
+        let jira_base_url = config::get("JIRA_BASE_URL");
+        let jira_api_key = config::get("JIRA_API_KEY");
 
         let comments = reqwest::Client::new()
             .get(format!(
@@ -147,7 +147,7 @@ pub struct IssueComment {
 
 impl IssueComment {
     pub async fn delete(&self) -> Result<()> {
-        let jira_api_key = config::get("JIRA_API_KEY")?;
+        let jira_api_key = config::get("JIRA_API_KEY");
 
         reqwest::Client::new()
             .delete(&self.api_url)
@@ -162,7 +162,7 @@ impl IssueComment {
     }
 
     pub fn is_by_anno_bot(&self) -> bool {
-        let jira_bot_user_id = config::get("JIRA_BOT_USER_ID").unwrap();
+        let jira_bot_user_id = config::get("JIRA_BOT_USER_ID");
 
         self.author.account_id == jira_bot_user_id
     }

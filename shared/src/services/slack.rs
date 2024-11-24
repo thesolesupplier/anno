@@ -24,7 +24,7 @@ pub async fn post_release_message(
         summary,
     }: MessageInput<'_>,
 ) -> Result<(), AppError> {
-    let send_slack_msg = config::get("SLACK_MESSAGE_ENABLED").is_ok_and(|v| v == "true");
+    let send_slack_msg = config::get("SLACK_MESSAGE_ENABLED") == "true";
 
     if !send_slack_msg {
         println!("------ SLACK MESSAGE ------");
@@ -35,7 +35,7 @@ pub async fn post_release_message(
 
     tracing::info!("Posting slack message");
 
-    let webhook_url = config::get("SLACK_WEBHOOK_URL")?;
+    let webhook_url = config::get("SLACK_WEBHOOK_URL");
 
     let mut message_blocks: Vec<serde_json::Value> =
         Vec::from([get_header_block(app_name, workflow_run)]);

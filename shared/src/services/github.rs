@@ -426,7 +426,7 @@ impl PullRequest {
     pub async fn add_comment(&self, comment: &str) -> Result<()> {
         tracing::info!("Adding pull request #{} comment", &self.number);
 
-        let pr_comment_enabled = config::get("PR_COMMENT_ENABLED").is_ok_and(|v| v == "true");
+        let pr_comment_enabled = config::get("PR_COMMENT_ENABLED") == "true";
 
         if !pr_comment_enabled {
             println!("------ PR COMMENT ------");
@@ -454,7 +454,7 @@ impl PullRequest {
     pub async fn hide_outdated_comments(&self) -> Result<()> {
         tracing::info!("Hiding outdated pull request {} comments", &self.number);
 
-        let pr_comment_enabled = config::get("PR_COMMENT_ENABLED").is_ok_and(|v| v == "true");
+        let pr_comment_enabled = config::get("PR_COMMENT_ENABLED") == "true";
 
         if !pr_comment_enabled {
             return Ok(());
@@ -504,7 +504,7 @@ pub struct PullRequestComment {
 
 impl PullRequestComment {
     pub fn is_by_anno_bot(&self) -> bool {
-        let bot_user_id = config::get("GITHUB_BOT_USER_ID").unwrap();
+        let bot_user_id = config::get("GITHUB_BOT_USER_ID");
 
         self.user.id.to_string() == bot_user_id
     }
@@ -576,7 +576,7 @@ impl WorkflowRuns {
     }
 
     async fn get_prev_runs(run: &WorkflowRun, page: u8) -> Result<Self, AppError> {
-        let gh_base_url = config::get("GITHUB_BASE_URL")?;
+        let gh_base_url = config::get("GITHUB_BASE_URL");
         let gh_token = AccessToken::get().await?;
 
         let url = format!(
@@ -746,12 +746,12 @@ impl AccessToken {
 
     async fn fetch() -> Result<String> {
         // Use token set by Github in an action context if available
-        if let Ok(github_token) = config::get("GITHUB_TOKEN") {
+        if let Some(github_token) = config::get_optional("GITHUB_TOKEN") {
             return Ok(github_token);
         }
 
-        let gh_base_url = config::get("GITHUB_BASE_URL")?;
-        let gh_app_install_id = config::get("GITHUB_APP_INSTALLATION_ID")?;
+        let gh_base_url = config::get("GITHUB_BASE_URL");
+        let gh_app_install_id = config::get("GITHUB_APP_INSTALLATION_ID");
 
         let jwt_token = jwt::create_github_token();
         let url = format!("{gh_base_url}/app/installations/{gh_app_install_id}/access_tokens");

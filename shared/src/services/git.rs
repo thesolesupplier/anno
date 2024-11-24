@@ -11,7 +11,7 @@ impl Git {
     pub async fn init(full_name: &str) -> Result<Self> {
         tracing::info!("Initialising {full_name} repository");
 
-        let repos_dir = config::get("REPOS_DIR")?;
+        let repos_dir = config::get("REPOS_DIR");
         let gh_token = AccessToken::get().await?;
 
         let repo_name = full_name.split('/').last().unwrap_or(full_name);
