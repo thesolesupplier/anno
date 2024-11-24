@@ -12,9 +12,13 @@ use shared::{
 async fn main() -> Result<(), AppError> {
     config::load();
 
-    let repo = config::get("GITHUB_REPOSITORY").unwrap();
-    let run_id = config::get("GITHUB_RUN_ID").unwrap();
-    let app_name = config::get("APP_NAME").ok();
+    let repo = config::get("GITHUB_REPOSITORY");
+    let run_id = config::get("GITHUB_RUN_ID");
+    let app_name = config::get_optional("APP_NAME");
+
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .init();
 
     let run = WorkflowRun::get_by_id(&repo, &run_id).await?;
 

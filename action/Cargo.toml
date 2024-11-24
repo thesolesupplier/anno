@@ -8,4 +8,5 @@ anyhow.workspace = true
 dotenv.workspace = true
 shared.workspace = true
 tokio.workspace = true
+tracing-subscriber.workspace = true
 tracing.workspace = true
