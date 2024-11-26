@@ -1,6 +1,8 @@
 use crate::middleware::validation::GithubEvent;
 use anyhow::Result;
 use chrono::{DateTime, Duration, SecondsFormat};
+use hyper::StatusCode;
+use serde::Deserialize;
 use shared::{
     ai::{self, ReleaseSummary},
     services::{
@@ -9,8 +11,6 @@ use shared::{
     },
     utils::{commits, error::AppError},
 };
-use hyper::StatusCode;
-use serde::Deserialize;
 
 pub async fn release_summary(
     GithubEvent(WorkflowEvent {
