@@ -145,7 +145,7 @@ impl Repository {
         tracing::info!("Fetching commits between {from} - {to}");
 
         // If no target_paths is provided we get all commit messages and return
-        // them because we know its not a mono-repo and they are all relevant.
+        // them because we know it's not a mono-repo and they are all relevant.
         let Some(target_paths) = target_paths else {
             let messages = self
                 .list_commits(&[("since", from), ("until", to)])

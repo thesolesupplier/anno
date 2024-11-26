@@ -1,6 +1,9 @@
 # **Anno**
+Anno is primarily a **GitHub Action** that leverages LLMs to summarise code changes released in deployments:
 
-Anno is a serverless Rust application that leverages LLMs and Jira and GitHub webhook events to add test cases to Jira issues, review PRs, and summarise code changes released in deployments.
+<img src="docs/release_summary_example.png" alt="Release summary example" width="650">
+
+It is also deployable as an **AWS HTTP Lambda** that receives Jira and GitHub webhook events to, in addition to release summaries, review PRs and add test cases to Jira issues.
 
 ## **Local Development**
 
