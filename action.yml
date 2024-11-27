@@ -2,22 +2,28 @@ name: Release Annotator
 description: Creates a release summary of code changes between workflow runs and sends it to a Slack channel.
 inputs:
   app_name:
-    description: The name of the app being deployed. This is used in the slack message and defaults to the repository name if not provided.
+    description: App name for the Slack message. Defaults to the repository name.
     required: false
   chat_gpt_api_key:
-    description: The API key for ChatGPT. It must have read and write permissions for chat completions.
+    description: ChatGPT API key. It must have read and write permissions for chat completions.
     required: true
   chat_gpt_model:
-    description: The model to use for ChatGPT. Defaults to `latest` if not provided.
+    description: ChatGPT model to use. Defaults to `latest`.
+    required: false
+  jira_integration_enabled:
+    description: Enable Jira integration. Defaults to `false`.
     required: false
   jira_api_key:
-    description: A base64 encoded string containing the Jira username and API key in a `<username>:<api_token>` format. The API key must have read permissions for Jira issues.
-    required: true
+    description: Base64-encoded `<username>:<api_token>` for Jira with read permissions. Required if Jira is enabled.
+    required: false
   jira_base_url:
-    description: The base URL for your Jira instance, e.g. https://my-company.atlassian.net
-    required: true
+    description: Base URL of your Jira instance, e.g. https://my-company.atlassian.net. Required if Jira is enabled.
+    required: false
+  jira_project_key:
+    description: Jira project key. Required if Jira is enabled.
+    required: false
   slack_webhook_url:
-    description: The webhook URL for the Slack channel where release summary will be sent.
+    description: Slack webhook URL for the release summary.
     required: true
 
 runs:

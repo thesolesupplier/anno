@@ -66,7 +66,7 @@ pub async fn release_summary(
 
     slack::post_release_message(slack::MessageInput {
         app_name: workflow_config.get_app_name(),
-        jira_issues,
+        jira_issues: Some(jira_issues),
         prev_run: &prev_run,
         pull_requests,
         run: &run,

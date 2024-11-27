@@ -15,6 +15,8 @@ async fn main() -> Result<(), AppError> {
     let repo = config::get("GITHUB_REPOSITORY");
     let run_id = config::get("GITHUB_RUN_ID");
     let app_name = config::get_optional("APP_NAME");
+    let jira_integration =
+        config::get_optional("JIRA_INTEGRATION_ENABLED").map_or(false, |v| v == "true");
 
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::INFO)
@@ -46,7 +48,12 @@ async fn main() -> Result<(), AppError> {
         .await?
         .get_commit_messages(old_commit, new_commit, &target_paths)?;
 
-    let jira_issues = commits::get_jira_issues(&commit_messages).await?;
+    let jira_issues = if jira_integration {
+        Some(commits::get_jira_issues(&commit_messages).await?)
+    } else {
+        None
+    };
+
     let pull_requests = commits::get_pull_requests(&run.repository, &commit_messages).await?;
     let summary = ai::ChatGpt::get_release_summary(&diff, &commit_messages).await?;
 

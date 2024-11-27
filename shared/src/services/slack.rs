@@ -7,7 +7,7 @@ use serde_json::json;
 
 pub struct MessageInput<'a> {
     pub app_name: Option<&'a str>,
-    pub jira_issues: Vec<Issue>,
+    pub jira_issues: Option<Vec<Issue>>,
     pub pull_requests: Vec<PullRequest>,
     pub prev_run: &'a WorkflowRun,
     pub run: &'a WorkflowRun,
@@ -43,7 +43,7 @@ pub async fn post_release_message(
     message_blocks.push(json!({ "type": "divider" }));
     message_blocks.push(get_summary_block(&summary));
 
-    if !jira_issues.is_empty() || !pull_requests.is_empty() {
+    if !jira_issues.as_ref().map_or(false, |i| !i.is_empty()) || !pull_requests.is_empty() {
         message_blocks.push(json!({ "type": "divider" }));
     }
 
@@ -51,8 +51,10 @@ pub async fn post_release_message(
         message_blocks.push(get_pull_requests_block(pull_requests));
     }
 
-    if !jira_issues.is_empty() {
-        message_blocks.push(get_jira_tickets_block(jira_issues));
+    if let Some(jira_issues) = jira_issues {
+        if !jira_issues.is_empty() {
+            message_blocks.push(get_jira_tickets_block(jira_issues));
+        }
     }
 
     message_blocks.push(get_actions_block(workflow_run, prev_run));
