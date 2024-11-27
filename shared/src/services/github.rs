@@ -655,9 +655,13 @@ impl WorkflowRun {
             return Ok(false);
         }
 
-        let is_first_successful_attempt = self.get_prev_successful_attempt().await?.is_none();
+        let is_first_successful_attempt = !self.has_prev_successful_attempt().await?;
 
         Ok(is_first_successful_attempt)
+    }
+
+    pub async fn has_prev_successful_attempt(&self) -> Result<bool, AppError> {
+        Ok(self.get_prev_successful_attempt().await?.is_some())
     }
 
     async fn get_prev_successful_attempt(&self) -> Result<Option<WorkflowRun>, AppError> {

@@ -24,8 +24,8 @@ async fn main() -> Result<(), AppError> {
 
     let run = WorkflowRun::get_by_id(&repo, &run_id).await?;
 
-    if !run.is_first_successful_attempt().await? {
-        tracing::info!("Unsuccessful attempt, skipping");
+    if run.has_prev_successful_attempt().await? {
+        tracing::info!("Already previously deployed, skipping");
         return Ok(());
     }
 
