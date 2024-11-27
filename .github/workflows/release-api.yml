@@ -6,6 +6,7 @@ on:
       - master
     paths:
       - api/**
+      - "!api/README.md"
       - shared/**
       - Cargo.toml
       - Cargo.lock
