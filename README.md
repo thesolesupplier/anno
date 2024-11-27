@@ -1,9 +1,28 @@
 # **Anno**
-Anno is primarily a **GitHub Action** that leverages LLMs to summarise code changes released in deployments:
+Anno is a **GitHub Action** that leverages LLMs to summarise code changes released in deployments:
 
 <img src="docs/release_summary_example.png" alt="Release summary example" width="650">
 
-It is also deployable as an **AWS HTTP Lambda** that receives Jira and GitHub webhook events to, in addition to release summaries, review PRs and add test cases to Jira issues.
+It can also be deployed as an **AWS HTTP Lambda** that receives Jira and GitHub webhook events to additionally review PRs and add test cases to Jira issues.
+
+## **Usage**
+
+```yaml
+uses: The-Sole-Supplier/anno
+with:
+  # The name of the app being deployed. This is used in the slack message and defaults to the repository name if not provided.
+  app_name:
+  # The API key for ChatGPT. It must have read and write permissions for chat completions.
+  chat_gpt_api_key: # !required
+  # The model to use for ChatGPT. Defaults to `latest` if not provided.
+  chat_gpt_model:
+  # A base64 encoded string containing the Jira username and API key in a `<username>:<api_token>` format. The API key must have read permissions for Jira issues.
+  jira_api_key: # !required
+  # The base URL for your Jira instance, e.g. https://my-company.atlassian.net
+  jira_base_url: # !required
+  # The webhook URL for the Slack channel where release summary will be sent.
+  slack_webhook_url: # !required
+```
 
 ## **Local Development**
 
