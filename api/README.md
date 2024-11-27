@@ -1,6 +1,6 @@
 # **Anno - API**
 
-Anno began as an API deployed on AWS Lambda, before its release summary feature was integrated into a Github Action. In additional to summarising releases, the API is capable of reviewing PRs and adding test cases to Jira issues, all of which are triggered via GitHub and Jira webhooks.
+Anno started as an API deployed on AWS Lambda, before its release summary feature was integrated into a GitHub Action. In addition to summarising releases, the API is capable of reviewing PRs and adding test cases to Jira issues, all of which are triggered via GitHub and Jira webhooks.
 
 ## **Usage**
 
