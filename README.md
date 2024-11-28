@@ -7,6 +7,8 @@ It can also be integrated with **Jira** to fetch issue titles for any ticket num
 
 ## **Usage**
 
+Place Anno as the **last job** in your workflow to ensure it runs only after all other jobs complete successfully.
+
 ```yaml
 uses: The-Sole-Supplier/anno
 with:
@@ -43,8 +45,9 @@ with:
   slack_webhook_url: ""
 ```
 
+
 ## API Alternative
 
 Anno can also be deployed as an AWS HTTP Lambda that integrates with Jira and GitHub webhook events. In addition to summarising releases, it can review pull requests and add test cases to Jira issues.
 
-For more details, please see the API's [README](api/README.md).
+For more details, see the API's [README](api/README.md).

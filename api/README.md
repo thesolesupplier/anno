@@ -1,8 +1,20 @@
 # **Anno - API**
 
-Anno started as an API deployed on AWS Lambda, before its release summary feature was integrated into a GitHub Action. In addition to summarising releases, the API is capable of reviewing PRs and adding test cases to Jira issues, all of which are triggered via GitHub and Jira webhooks.
+Anno started as an API deployed on AWS Lambda, before its release summary feature was integrated into a GitHub Action. In addition to summarising releases, the API can review pull requests and add test cases to Jira issues, all of which are triggered via GitHub and Jira webhooks.
 
 ## **Usage**
+
+The API has three main use cases, each of which is triggered by a different webhook.
+
+### Release Summaries
+`POST` `/github/workflow`
+
+### PR Reviews
+`POST` `/github/pull-request/bugs`
+### Jira Test Cases
+`POST` `/jira/issue/:key/status`
+
+Requires **all** of the `JIRA_*` environment variables to be set.
 
 ## **Local Development**
 
@@ -20,7 +32,7 @@ For local development, the app is run as a standard [Axum](https://github.com/to
 
 The server should now be running at `http://localhost:3000`.
 
-### **LLM Model Configuration**
+## **LLM Model Configuration**
 
 There is no overriding environment variable for whether Anno should use Claude or ChatGPT, as one is used for PR reviews and the other for release summaries. However, their respective models can be configured via the `CHAT_GPT_MODEL` and `CLAUDE_MODEL` environment variables.
 
