@@ -590,9 +590,8 @@ impl WorkflowRuns {
             .header("Accept", "application/json")
             .header("User-Agent", "Anno")
             .query(&[
-                ("branch", "master"),
-                ("created", &format!("<{}", run.created_at)),
                 ("exclude_pull_requests", "true"),
+                ("created", &format!("<{}", run.created_at)),
                 ("page", &page.to_string()),
             ])
             .send()
