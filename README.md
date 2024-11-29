@@ -3,7 +3,7 @@ Anno is a **GitHub Action** that leverages LLMs to summarise code changes releas
 
 <img src="docs/release_summary_example.png" alt="Release summary example" width="650">
 
-It can also be integrated with **Jira** to fetch issue titles for any ticket numbers found in commit messages, however this requires your branch naming convention to include the Jira ticket number (e.g., `feature/<project-key>-1234-add-new-feature`).
+It can also be integrated with **Jira** to fetch titles for any ticket numbers found in commit messages, however this requires your branch naming convention to include the Jira ticket number (e.g., `feature/<project-key>-1234-add-new-feature`).
 
 ## **Usage**
 
@@ -44,7 +44,18 @@ with:
   # Required.
   slack_webhook_url: ""
 ```
+## Monorepo Usage
 
+There should be no special setup required for monorepos. Anno will download the workflow file and use the [`on.push.paths`](https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#example-including-paths) property to determine which files and commits to include in its analysis:
+
+```yaml
+on:
+  push:
+    paths:
+      - apps/capi/**
+```
+
+If `paths` is not specified, Anno will default to the entire repository.
 
 ## API Alternative
 
