@@ -9,7 +9,7 @@ use shared::{
         github::{WorkflowRun, WorkflowRuns},
         slack, Git,
     },
-    utils::{commits, error::AppError},
+    utils::{commits, config, error::AppError},
 };
 
 pub async fn release_summary(
@@ -19,6 +19,9 @@ pub async fn release_summary(
     }): GithubEvent<WorkflowEvent>,
 ) -> Result<StatusCode, AppError> {
     tracing::info!("Processing {} run {}", run.repository.name, run.name);
+
+    let jira_integration =
+        config::get_optional("JIRA_INTEGRATION_ENABLED").map_or(false, |v| v == "true");
 
     if !run.is_first_successful_attempt().await? {
         tracing::info!("Unsuccessful attempt, skipping");
@@ -60,13 +63,18 @@ pub async fn release_summary(
             .get_commit_messages(old_commit, new_commit, &target_paths)?
     };
 
-    let jira_issues = commits::get_jira_issues(&commit_messages).await?;
+    let jira_issues = if jira_integration {
+        Some(commits::get_jira_issues(&commit_messages).await?)
+    } else {
+        None
+    };
+
     let pull_requests = commits::get_pull_requests(&run.repository, &commit_messages).await?;
     let summary = ai::ChatGpt::get_release_summary(&diff, &commit_messages).await?;
 
     slack::post_release_message(slack::MessageInput {
         app_name: workflow_config.get_app_name(),
-        jira_issues: Some(jira_issues),
+        jira_issues,
         prev_run: &prev_run,
         pull_requests,
         run: &run,

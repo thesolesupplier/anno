@@ -47,16 +47,16 @@ impl Issue {
     }
 
     pub async fn add_comment(&self, body: &str) -> Result<()> {
-        let jira_base_url = config::get("JIRA_BASE_URL");
-        let jira_comment_enabled = config::get("JIRA_COMMENT_ENABLED") == "true";
+        let jira_integration_enabled = config::get("JIRA_INTEGRATION_ENABLED") == "true";
 
-        if !jira_comment_enabled {
+        if !jira_integration_enabled {
             println!("------ JIRA COMMENT ------");
             println!("{body}");
             println!("--------------------------");
             return Ok(());
         }
 
+        let jira_base_url = config::get("JIRA_BASE_URL");
         let jira_api_key = config::get("JIRA_API_KEY");
 
         reqwest::Client::new()
@@ -87,9 +87,9 @@ impl Issue {
     }
 
     pub async fn delete_outdated_comments(&self) -> Result<()> {
-        let jira_comment_enabled = config::get("JIRA_COMMENT_ENABLED") == "true";
+        let jira_integration_enabled = config::get("JIRA_INTEGRATION_ENABLED") == "true";
 
-        if !jira_comment_enabled {
+        if !jira_integration_enabled {
             return Ok(());
         }
 
