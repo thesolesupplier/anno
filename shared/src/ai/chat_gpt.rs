@@ -10,14 +10,14 @@ impl Ai for ChatGpt {
     async fn make_request(system_input: &str, user_input: String) -> Result<String> {
         let base_url = config::get("CHAT_GPT_BASE_URL");
         let api_key = config::get("CHAT_GPT_API_KEY");
-        let model = config::get_optional("CHAT_GPT_MODEL").unwrap_or_else(|| "latest".to_string());
+        let model = config::get_optional("CHAT_GPT_MODEL");
 
         let mut response = reqwest::Client::new()
             .post(format!("{base_url}/chat/completions"))
             .header("content-type", "application/json")
             .bearer_auth(api_key)
             .json(&json!({
-                "model": model,
+                "model": model.unwrap_or_else(|| "gpt-4o".to_string()),
                 "temperature": 0.0,
                 "frequency_penalty": 1.0,
                 "messages": [

@@ -682,8 +682,6 @@ impl WorkflowRun {
     }
 
     async fn get_prev_attempt(&self) -> Result<Option<WorkflowRun>, AppError> {
-        tracing::info!("Fetching previous '{}' workflow attempt", &self.name);
-
         let gh_token = AccessToken::get().await?;
 
         let Some(prev_attempt_url) = &self.previous_attempt_url else {

@@ -9,8 +9,10 @@ It can also be integrated with **Jira** to fetch titles for any ticket numbers f
 
 Place Anno as the **last job** in your workflow to ensure it runs only after all other jobs complete successfully.
 
+The minimum required inputs to get going are `chat_gpt_api_key` and `slack_webhook_url`.
+
 ```yaml
-uses: The-Sole-Supplier/anno
+uses: The-Sole-Supplier/anno@v1
 with:
   # App name for the Slack message.
   # Default: Repository name.
@@ -44,9 +46,10 @@ with:
   # Required.
   slack_webhook_url: ""
 ```
+
 ## Monorepo Usage
 
-There should be no special setup required for monorepos. Anno will download the workflow file and use the [`on.push.paths`](https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#example-including-paths) property to determine which files and commits to include in its analysis:
+There shouldn't be any special setup required for monorepos. Anno will download the workflow file and use the [`on.push.paths`](https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#example-including-paths) property to determine which files and commits to include in its analysis:
 
 ```yaml
 on:
