@@ -97,7 +97,7 @@ impl Repository {
         new_sha: &str,
         target_paths: &Option<Vec<String>>,
     ) -> Result<String> {
-        tracing::info!("Fetching diff beween {old_sha} - {new_sha}");
+        tracing::info!("Fetching diff between {old_sha} - {new_sha}");
 
         let gh_token = AccessToken::get().await?;
         let url = self
@@ -304,7 +304,7 @@ impl WorkflowConfig {
 
         let sanitised_paths = paths
             .iter()
-            .filter(|p| IGNORED_REPO_PATHS.iter().all(|i| !p.contains(i)))
+            .filter(|p| !p.starts_with("!") && IGNORED_REPO_PATHS.iter().all(|i| !p.contains(i)))
             .map(|p| special_char_regex.replace_all(p, "").to_string())
             .collect();
 
