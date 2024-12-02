@@ -52,7 +52,7 @@ The following environment variables are **required**:
 ### Jira Test Cases
 `POST` `/jira/issue/:key/status`
 
-Expects an [issue_updated](https://developer.atlassian.com/cloud/jira/platform/webhooks/#issue-updated) webhook event.
+Expects an [issue_updated](https://developer.atlassian.com/cloud/jira/platform/webhooks/#issue-webhooks) webhook event.
 
 The following environment variables are **required**:
 
