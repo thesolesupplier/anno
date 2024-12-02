@@ -23,7 +23,7 @@ with:
   chat_gpt_api_key: ""
 
   # ChatGPT model to use.
-  # Default: `latest`.
+  # Default: `gpt-4o`.
   chat_gpt_model: ""
 
   # Enable Jira integration.

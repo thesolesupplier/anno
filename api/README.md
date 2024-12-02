@@ -31,6 +31,7 @@ If you want to integrate with Jira, the following environment variables are also
 - `JIRA_INTEGRATION_ENABLED` - _(set to `true`)_
 - `JIRA_API_KEY` - _(base64 encoded `<username>:<api_token>`)_
 - `JIRA_BASE_URL`
+- `JIRA_PROJECT_KEY` - (If your ticket keys are `ABC-123`, the project key is `ABC`)
 
 
 ### PR Reviews
@@ -60,6 +61,7 @@ The following environment variables are **required**:
 - `JIRA_API_KEY` - _(base64 encoded `<username>:<api_token>`)_
 - `JIRA_BASE_URL`
 - `JIRA_BOT_USER_ID`
+- `JIRA_PROJECT_KEY` - (If your ticket keys are `ABC-123`, the project key is `ABC`)
 - `JIRA_WEBHOOK_SECRET`
 
 ## **Local Development**

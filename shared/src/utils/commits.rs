@@ -1,3 +1,4 @@
+use super::config;
 use crate::services::{
     github::{PullRequest, Repository},
     jira::Issue,
@@ -5,12 +6,11 @@ use crate::services::{
 use anyhow::Result;
 use futures::future::try_join_all;
 use regex_lite::Regex;
-use std::{collections::HashSet, sync::OnceLock};
-
-static JIRA_ISSUE_REGEX: OnceLock<Regex> = OnceLock::new();
+use std::collections::HashSet;
 
 pub async fn get_jira_issues(commit_messages: &[String]) -> Result<Vec<Issue>> {
-    let issue_regex = JIRA_ISSUE_REGEX.get_or_init(|| Regex::new(r"TFW-\d+").unwrap());
+    let project_key = config::get("JIRA_PROJECT_KEY");
+    let issue_regex = Regex::new(&format!(r"{project_key}-\d+")).unwrap();
 
     let requests: Vec<_> = commit_messages
         .iter()
@@ -31,13 +31,11 @@ pub async fn get_jira_issues(commit_messages: &[String]) -> Result<Vec<Issue>> {
     Ok(issues)
 }
 
-static PR_REGEX: OnceLock<Regex> = OnceLock::new();
-
 pub async fn get_pull_requests<'a>(
     repo: &'a Repository,
     commit_messages: &'a [String],
 ) -> Result<Vec<PullRequest>> {
-    let pr_regex = PR_REGEX.get_or_init(|| Regex::new(r"#(\d+)").unwrap());
+    let pr_regex = Regex::new(r"#(\d+)").unwrap();
 
     let requests: Vec<_> = commit_messages
         .iter()
