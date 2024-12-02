@@ -74,7 +74,7 @@ jobs:
             --env-var PR_COMMENT_ENABLED=true \
             --env-var REPOS_DIR=/tmp/repos \
             --env-var SLACK_MESSAGE_ENABLED=true \
-            --env-var SLACK_WEBHOOK_URL=https://hooks.slack.com/services/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 \
+            --env-var SLACK_WEBHOOK_URL=${{ secrets.SLACK_RELEASE_ANNOTATIONS_WEBHOOK }} \
             --env-var WEBHOOK_VALIDATION=true
         env:
           AWS_DEFAULT_REGION: eu-west-1
