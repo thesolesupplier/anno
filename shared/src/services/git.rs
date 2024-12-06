@@ -21,7 +21,13 @@ impl Git {
         let repo = match git2::Repository::open(&repo_disk_path) {
             Ok(repo) => {
                 tracing::info!("Repository already cloned, pulling latest changes");
-                repo.find_remote("origin")?.fetch(&["master"], None, None)?;
+
+                repo.find_remote("origin")?.fetch(
+                    &["master"],
+                    Some(&mut Self::get_fetch_options(gh_token)),
+                    None,
+                )?;
+
                 repo
             }
             Err(_) => {
@@ -31,6 +37,19 @@ impl Git {
         };
 
         Ok(Self { repo })
+    }
+
+    fn get_fetch_options(gh_token: &str) -> git2::FetchOptions<'_> {
+        let mut callbacks = git2::RemoteCallbacks::new();
+
+        callbacks.credentials(move |_url, _username_from_url, _allowed_types| {
+            git2::Cred::userpass_plaintext("x-access-token", gh_token)
+        });
+
+        let mut fetch_options = git2::FetchOptions::new();
+        fetch_options.remote_callbacks(callbacks);
+
+        fetch_options
     }
 
     pub fn get_contents(&self) -> Result<Vec<String>> {
