@@ -49,13 +49,14 @@ with:
 
 ## Monorepo Usage
 
-There shouldn't be any special setup required for monorepos. Anno will download the workflow file and use the [`on.push.paths`](https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#example-including-paths) property to determine which files and commits to include in its analysis:
+There shouldn't be any special setup required for monorepos. Anno will download the workflow file and use the [`on.push.paths`](https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#example-including-paths) and [`on.push.paths-ignore`](https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#example-excluding-paths) properties to determine which files and commits to include in its analysis:
 
 ```yaml
 on:
   push:
     paths:
-      - apps/capi/**
+      - 'sub-project/**'
+      - '!sub-project/docs/**'
 ```
 
 If `paths` is not specified, Anno will default to the entire repository.

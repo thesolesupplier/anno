@@ -1,3 +1,4 @@
+use super::github::WorkflowTargetPaths;
 use crate::{services::github::AccessToken, utils::config};
 use anyhow::Result;
 use git2::{Commit, ObjectType, Oid, TreeEntry, TreeWalkMode, TreeWalkResult};
@@ -88,7 +89,7 @@ impl Git {
         &self,
         start_commit: &str,
         end_commit: &str,
-        target_paths: &Option<Vec<String>>,
+        target_paths: &Option<WorkflowTargetPaths>,
     ) -> Result<Vec<String>> {
         tracing::info!("Getting commit messages");
 
@@ -111,7 +112,7 @@ impl Git {
     fn get_commit_message(
         &self,
         commit: Oid,
-        target_paths: &Option<Vec<String>>,
+        target_paths: &Option<WorkflowTargetPaths>,
     ) -> Result<Option<String>> {
         let commit = self.repo.find_commit(commit)?;
 
@@ -120,7 +121,7 @@ impl Git {
 
             if !affected_files
                 .iter()
-                .any(|path| target_paths.iter().any(|p| path.contains(p)))
+                .any(|p| target_paths.is_path_included(p))
             {
                 return Ok(None);
             }

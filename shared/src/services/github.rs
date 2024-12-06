@@ -2,6 +2,7 @@ use crate::utils::{config, error::AppError, jwt};
 use anyhow::Result;
 use base64::prelude::*;
 use futures::future::try_join_all;
+use glob::Pattern;
 use regex_lite::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -95,9 +96,9 @@ impl Repository {
         &self,
         old_sha: &str,
         new_sha: &str,
-        target_paths: &Option<Vec<String>>,
+        target_paths: &Option<WorkflowTargetPaths>,
     ) -> Result<String> {
-        tracing::info!("Fetching diff between {old_sha} - {new_sha}");
+        tracing::info!("Fetching diff between {old_sha} and {new_sha}");
 
         let gh_token = AccessToken::get().await?;
         let url = self
@@ -116,31 +117,44 @@ impl Repository {
             .text()
             .await?;
 
-        let mut is_inside_ignored_file = false;
-        let filtered_diff = diff
-            .lines()
-            .filter(|line| {
-                if line.contains("diff --git") {
-                    let is_ignored_file = IGNORED_REPO_PATHS.iter().any(|p| line.contains(p));
-                    let is_non_target_file = target_paths.as_ref().map_or(false, |paths| {
-                        paths.iter().all(|p| !line.contains(p.as_str()))
-                    });
+        let filtered_diff = self.filter_diff_by_paths(&diff, target_paths);
 
-                    is_inside_ignored_file = is_ignored_file || is_non_target_file;
+        Ok(filtered_diff)
+    }
+
+    fn filter_diff_by_paths(
+        &self,
+        diff: &str,
+        target_paths: &Option<WorkflowTargetPaths>,
+    ) -> String {
+        let re = Regex::new(r"b/([^ ]+)").unwrap();
+        let mut is_inside_ignored_file = false;
+
+        diff.lines()
+            .filter(|line| {
+                if line.starts_with("diff --git") {
+                    if let Some(caps) = re.captures(line) {
+                        let path = caps[1].to_string();
+
+                        let is_ignored_file = IGNORED_REPO_PATHS.iter().any(|p| path.contains(p));
+                        let is_non_target_file = target_paths
+                            .as_ref()
+                            .map_or(false, |p| !p.is_path_included(&path));
+
+                        is_inside_ignored_file = is_ignored_file || is_non_target_file;
+                    }
                 }
 
                 !is_inside_ignored_file
             })
             .collect::<Vec<_>>()
-            .join("\n");
-
-        Ok(filtered_diff)
+            .join("\n")
     }
 
     pub async fn fetch_commit_messages_in_range(
         &self,
         (from, to): (&str, &str),
-        target_paths: &Option<Vec<String>>,
+        target_paths: &Option<WorkflowTargetPaths>,
     ) -> Result<Vec<String>> {
         tracing::info!("Fetching commits between {from} - {to}");
 
@@ -161,7 +175,7 @@ impl Repository {
         // files with any of the target_paths in their paths.
         let mut messages = HashSet::new();
 
-        for path in target_paths {
+        for path in &target_paths.get_sanitised_included() {
             for commit in self
                 .list_commits(&[("since", from), ("until", to), ("path", path)])
                 .await?
@@ -201,7 +215,7 @@ impl Repository {
 
                 let has_affected_target_files = files
                     .iter()
-                    .any(|f| target_paths.iter().any(|p| f.filename.contains(p)));
+                    .any(|f| target_paths.is_path_included(&f.filename));
 
                 if has_affected_target_files {
                     messages.insert(commit.message.clone());
@@ -278,7 +292,7 @@ pub struct RepoFile {
     pub content: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize)]
 pub struct WorkflowConfig {
     on: Option<WorkflowOnConfig>,
     env: Option<WorkflowEnvVariables>,
@@ -293,22 +307,8 @@ impl WorkflowConfig {
         Ok(config)
     }
 
-    pub fn get_target_paths(&self) -> Option<Vec<String>> {
-        let paths = self.on.as_ref()?.push.as_ref()?.paths.as_ref()?;
-
-        if paths.is_empty() {
-            return None;
-        }
-
-        let special_char_regex = Regex::new(r"[*\[\]?!+]").unwrap();
-
-        let sanitised_paths = paths
-            .iter()
-            .filter(|p| !p.starts_with("!") && IGNORED_REPO_PATHS.iter().all(|i| !p.contains(i)))
-            .map(|p| special_char_regex.replace_all(p, "").to_string())
-            .collect();
-
-        Some(sanitised_paths)
+    pub fn get_target_paths(&self) -> Option<WorkflowTargetPaths> {
+        WorkflowTargetPaths::from_workflow_config(self)
     }
 
     pub fn get_app_name(&self) -> Option<&str> {
@@ -323,7 +323,64 @@ impl WorkflowConfig {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug)]
+pub struct WorkflowTargetPaths {
+    pub included: Vec<Pattern>,
+    pub excluded: Vec<Pattern>,
+}
+
+impl WorkflowTargetPaths {
+    pub fn from_workflow_config(config: &WorkflowConfig) -> Option<Self> {
+        let push_config = config.on.as_ref()?.push.as_ref()?;
+        let paths = push_config.paths.as_deref().unwrap_or_default();
+        let ignored_paths = push_config.paths_ignore.as_deref().unwrap_or_default();
+
+        if paths.is_empty() && ignored_paths.is_empty() {
+            return None;
+        }
+
+        let (included, mut excluded) = paths
+            .iter()
+            .filter(|p| IGNORED_REPO_PATHS.iter().all(|i| !p.contains(i)))
+            .partition::<Vec<_>, _>(|p| !p.starts_with('!'));
+
+        for path in ignored_paths {
+            excluded.push(path);
+        }
+
+        let create_patterns = |pths: Vec<&String>| {
+            pths.iter()
+                .map(|p| {
+                    let pattern = p.strip_prefix('!').unwrap_or(p);
+                    Pattern::new(pattern).unwrap()
+                })
+                .collect::<Vec<_>>()
+        };
+
+        Some(Self {
+            included: create_patterns(included),
+            excluded: create_patterns(excluded),
+        })
+    }
+
+    pub fn is_path_included(&self, path: &str) -> bool {
+        let is_included = self.included.is_empty() || self.included.iter().any(|p| p.matches(path));
+        let is_excluded = self.excluded.iter().any(|p| p.matches(path));
+
+        is_included && !is_excluded
+    }
+
+    pub fn get_sanitised_included(&self) -> Vec<String> {
+        let special_char_regex = Regex::new(r"[*\[\]?!+]").unwrap();
+
+        self.included
+            .iter()
+            .map(|p| special_char_regex.replace_all(p.as_str(), "").to_string())
+            .collect()
+    }
+}
+
+#[derive(Deserialize)]
 struct WorkflowEnvVariables {
     #[serde(rename = "ANNO_APP_NAME")]
     app_name: Option<String>,
@@ -331,14 +388,16 @@ struct WorkflowEnvVariables {
     summary_enabled: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize)]
 struct WorkflowOnConfig {
     push: Option<WorkflowOnPushConfig>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize)]
 struct WorkflowOnPushConfig {
     paths: Option<Vec<String>>,
+    #[serde(rename = "paths-ignore")]
+    paths_ignore: Option<Vec<String>>,
 }
 
 #[derive(Deserialize)]
