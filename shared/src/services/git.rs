@@ -119,10 +119,7 @@ impl Git {
         if let Some(target_paths) = target_paths {
             let affected_files = self.get_affected_files(&commit)?;
 
-            if !affected_files
-                .iter()
-                .any(|p| target_paths.is_path_included(p))
-            {
+            if !affected_files.iter().any(|p| target_paths.is_included(p)) {
                 return Ok(None);
             }
         }
