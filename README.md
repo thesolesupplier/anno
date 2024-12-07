@@ -3,7 +3,7 @@ Anno is a **GitHub Action** that leverages LLMs to summarise code changes releas
 
 <img src="docs/release_summary_example.png" alt="Release summary example" width="650">
 
-It can also be integrated with **Jira** to fetch titles for any ticket numbers found in commit messages, however this requires your branch naming convention to include the Jira ticket number (e.g., `feature/<project-key>-1234-add-new-feature`).
+It can also be integrated with **Jira** to list titles and links for any ticket numbers found in your commit messages or branch names.
 
 ## **Usage**
 
@@ -59,7 +59,7 @@ on:
       - '!sub-project/docs/**'
 ```
 
-If `paths` is not specified, Anno will default to the entire repository.
+If neither are specified, Anno will default to the entire repository.
 
 ## API Alternative
 
