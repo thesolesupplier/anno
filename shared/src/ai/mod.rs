@@ -68,34 +68,6 @@ pub trait PrBugAnalysis: Ai {
     }
 }
 
-pub trait PrAdrAnalysis: Ai {
-    async fn get_pr_adr_analysis(
-        PrAdrAnalysisInput {
-            diff,
-            adrs,
-            commit_messages,
-            pr_body,
-        }: PrAdrAnalysisInput<'_>,
-    ) -> Result<String> {
-        tracing::info!("Fetching AI PR ADR analysis");
-
-        let adrs = adrs.join("\n");
-        let commit_messages = commit_messages.join("\n");
-
-        let mut user_prompt = format!(
-            "<Diff>{diff}</Diff>
-            <Adrs>{adrs}</Adrs>
-            <CommitMessages>{commit_messages}</CommitMessages>"
-        );
-
-        if let Some(pr_body) = pr_body {
-            user_prompt.push_str(&format!("<PrDescription>{pr_body}</PrDescription>"));
-        }
-
-        Self::prompt(prompts::PR_ADR_ANALYSIS, user_prompt).await
-    }
-}
-
 pub trait IssueTestCasing: Ai {
     async fn get_test_cases(
         issue_description: &str,
@@ -116,14 +88,6 @@ pub trait IssueTestCasing: Ai {
     }
 }
 
-pub struct PrAdrAnalysisInput<'a> {
-    pub diff: &'a str,
-    pub adrs: &'a [String],
-    pub commit_messages: &'a [String],
-    pub pr_body: &'a Option<String>,
-}
-
 impl<T> ReleaseSummary for T where T: Ai {}
-impl<T> PrAdrAnalysis for T where T: Ai {}
 impl<T> PrBugAnalysis for T where T: Ai {}
 impl<T> IssueTestCasing for T where T: Ai {}

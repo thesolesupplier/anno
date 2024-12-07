@@ -52,7 +52,6 @@ jobs:
           pip install cargo-lambda
           cargo lambda build --release --bin api
           cargo lambda deploy --enable-function-url --binary-name api anno \
-            --env-var ADR_REPO_FULL_NAME=The-Sole-Supplier/ADRs \
             --env-var CHAT_GPT_API_KEY=${{ secrets.CHAT_GPT_API_KEY }} \
             --env-var CHAT_GPT_BASE_URL=https://api.openai.com/v1 \
             --env-var CHAT_GPT_MODEL=gpt-4o-2024-08-06 \

@@ -37,10 +37,6 @@ async fn main() {
             "/github",
             Router::new()
                 .route(
-                    "/pull-request/adr",
-                    post(routes::github::pull_request::adr_analysis),
-                )
-                .route(
                     "/pull-request/bugs",
                     post(routes::github::pull_request::bug_analysis),
                 )
