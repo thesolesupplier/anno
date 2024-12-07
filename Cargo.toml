@@ -13,7 +13,6 @@ resolver = "2"
 
 [workspace.dependencies]
 anyhow = "1.0.81"
-api = {path = "api"}
 axum = "0.7.5"
 chrono = "0.4.38"
 dotenv = "0.15.0"

@@ -2,7 +2,7 @@ use crate::middleware::validation::GithubEvent;
 use hyper::StatusCode;
 use serde::Deserialize;
 use shared::{
-    ai::{self, PrBugAnalysis},
+    ai,
     services::github::{PullRequest, Repository},
     utils::error::AppError,
 };

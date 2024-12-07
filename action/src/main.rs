@@ -1,6 +1,6 @@
 use anyhow::Result;
 use shared::{
-    ai::{self, ReleaseSummary},
+    ai,
     services::{
         github::{WorkflowRun, WorkflowRuns},
         slack, Git,

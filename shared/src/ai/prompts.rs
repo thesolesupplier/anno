@@ -20,35 +20,31 @@ pub const RELEASE_SUMMARY: &str = "
     </Steps>
     <ExampleOutPut1>
         <Output>
-            *New features*:
+            New features:
             • Search results can now be filtered by date and relevance.
             • New avatar customisation options have been added to user profiles.
-            *Improvements*:
+            Improvements:
             • Refactored the marketing service to improve readability.
             • Added more breakpoints to the Image component.
-            *Bug fixes*:
+            Bug fixes:
             • Fixed an issue where the data service was not guarding against unexpected parsing errors.
             • Implemented a workaround to address the caching bug in the user authentication flow.
-            *Dependency changes*:
+            Dependency changes:
             • Updated Library `XYZ` to version `1.3.0`.
             • Added library `ABC` version `2.1.0`.
-            *Feature flags*
+            Feature flags
             • `AVATAR_CUSTOMISATION` is enabled in `qa` and `staging` environments.
         </Output>
     </ExampleOutPut1>
     <ExampleOutPut2>
-        <Output>
-            *New features*:
+            New features
             • Added support for tracking URLs in Discord messages for new product discoveries.
-            *Feature flags*
+            Feature flags
             • `DISCORD_TRACKED_URLS` is enabled in the `prod` environment.
-        </Output>
     </ExampleOutPut2>
     <ExampleOutPut3>
-        <Output>
-            *Bug fixes*:
+            Bug fixes
             • Fixed an issue where the Twitter hyperlink was not displaying properly.
-        </Output>
     </ExampleOutPut3>
     Please perform this analysis on the provided git code diff and commits and deliver a summary as described above based on that diff.
     The output should be placed in <Output> tags as demonstrated in the examples above.
@@ -91,7 +87,6 @@ pub const JIRA_ISSUE_TEST_CASES: &str = "
         Avoid using technical jargon or acronyms that may not be understood by all team members.
         If the issue has multiple scenarios, create a separate test case for each scenario.
         If the test cases have any links, display them without formatting.
-        Your response should be placed in <Output> tags.
     </Instructions>
     <Steps>
         Analyze the Jira Issue: Read the Jira issue description and comments.
@@ -99,7 +94,4 @@ pub const JIRA_ISSUE_TEST_CASES: &str = "
         Create Test Cases: Write clear and concise test cases for each scenario in very basic markdown format.
         Format Test Cases: Format the test cases in a clear and easy-to-read manner.
     </Steps>
-    <Example>
-        *TEST CASES*\n\n1 - Verify \"What's Popular\" section is removed when a single filter is applied\n2 - Verify \"What's Popular\" section is removed when multiple filters are applied\n3 - Verify \"What's Popular\" section is visible when no filters are applied
-    </Example>
 ";

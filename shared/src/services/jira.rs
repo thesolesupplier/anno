@@ -1,8 +1,9 @@
-use crate::utils::config;
+use crate::{ai::TestCases, utils::config};
 use anyhow::Result;
 use futures::future::try_join_all;
 use serde::Deserialize;
-use serde_json::json;
+use serde_json::{json, Value};
+use uuid::Uuid;
 
 #[derive(Deserialize)]
 pub struct Issue {
@@ -46,12 +47,12 @@ impl Issue {
         format!("{jira_base_url}/browse/{}", self.key)
     }
 
-    pub async fn add_comment(&self, body: &str) -> Result<()> {
+    pub async fn add_test_cases(&self, test_cases: TestCases) -> Result<()> {
         let jira_integration_enabled = config::get("JIRA_INTEGRATION_ENABLED") == "true";
 
         if !jira_integration_enabled {
             println!("------ JIRA COMMENT ------");
-            println!("{body}");
+            println!("{test_cases:#?}");
             println!("--------------------------");
             return Ok(());
         }
@@ -61,12 +62,13 @@ impl Issue {
 
         reqwest::Client::new()
             .post(format!(
-                "{jira_base_url}/rest/api/2/issue/{}/comment",
+                "{jira_base_url}/rest/api/3/issue/{}/comment",
                 self.id
             ))
             .header("Accept", "application/json")
+            .header("Content-Type", "application/json")
             .header("Authorization", format!("Basic {jira_api_key}"))
-            .json(&json!({ "body": body }))
+            .json(&json!({ "body": format_test_cases(test_cases) }))
             .send()
             .await?
             .error_for_status()
@@ -179,4 +181,59 @@ pub struct CommentAuthor {
 pub struct IssueFields {
     pub summary: String,
     pub description: Option<String>,
+}
+
+fn format_test_cases(test_cases: TestCases) -> Value {
+    json!({
+      "version": 1,
+      "type": "doc",
+      "content": [
+        {
+          "type": "panel",
+          "attrs": {
+            "panelType": "success"
+          },
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Test Cases",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "taskList",
+          "attrs": {
+            "localId": Uuid::new_v4().to_string()
+          },
+          "content": test_cases.cases
+          .into_iter()
+          .map(|case| {
+              json!({
+                  "type": "taskItem",
+                  "attrs": {
+                      "state": "TODO",
+                      "localId": Uuid::new_v4().to_string(),
+                  },
+                  "content": [
+                      {
+                          "type": "text",
+                          "text": format!(" {}", case)
+                      }
+                  ]
+              })
+          })
+          .collect::<Vec<Value>>()
+        }
+      ]
+    })
 }

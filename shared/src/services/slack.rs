@@ -2,8 +2,11 @@ use super::{
     github::{PullRequest, WorkflowRun},
     jira::Issue,
 };
-use crate::utils::{config, error::AppError};
-use serde_json::json;
+use crate::{
+    ai::ReleaseNotes,
+    utils::{config, error::AppError},
+};
+use serde_json::{json, Value};
 
 pub struct MessageInput<'a> {
     pub app_name: Option<&'a str>,
@@ -11,7 +14,7 @@ pub struct MessageInput<'a> {
     pub pull_requests: Vec<PullRequest>,
     pub prev_run: &'a WorkflowRun,
     pub run: &'a WorkflowRun,
-    pub summary: String,
+    pub summary: ReleaseNotes,
 }
 
 pub async fn post_release_message(
@@ -28,7 +31,7 @@ pub async fn post_release_message(
 
     if !send_slack_msg {
         println!("------ SLACK MESSAGE ------");
-        println!("{summary}");
+        println!("{summary:#?}");
         println!("---- END SLACK MESSAGE ----");
         return Ok(());
     }
@@ -41,7 +44,10 @@ pub async fn post_release_message(
         Vec::from([get_header_block(app_name, workflow_run)]);
 
     message_blocks.push(json!({ "type": "divider" }));
-    message_blocks.push(get_summary_block(&summary));
+
+    for block in get_summary_block(&summary) {
+        message_blocks.push(block);
+    }
 
     if !jira_issues.as_ref().map_or(false, |i| !i.is_empty()) || !pull_requests.is_empty() {
         message_blocks.push(json!({ "type": "divider" }));
@@ -87,14 +93,27 @@ fn get_header_block(app_name: Option<&str>, run: &WorkflowRun) -> serde_json::Va
     })
 }
 
-fn get_summary_block(summary: &str) -> serde_json::Value {
-    json!({
-        "type": "section",
-        "text": {
-            "type": "mrkdwn",
-            "text": summary
-        }
-    })
+fn get_summary_block(release_notes: &ReleaseNotes) -> Vec<Value> {
+    let mut blocks = Vec::new();
+
+    for category in &release_notes.items {
+        let items = category
+            .items
+            .iter()
+            .map(|note| format!(r"  •   {note}"))
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        blocks.push(json!({
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": format!("*{}:*\n{items}", category.title),
+            }
+        }));
+    }
+
+    blocks
 }
 
 fn get_pull_requests_block(pull_requests: Vec<PullRequest>) -> serde_json::Value {

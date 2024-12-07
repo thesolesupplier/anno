@@ -236,10 +236,7 @@ impl WorkflowTargetPaths {
 
         let create_patterns = |pths: Vec<&String>| {
             pths.iter()
-                .map(|p| {
-                    let pattern = p.strip_prefix('!').unwrap_or(p);
-                    Pattern::new(pattern).unwrap()
-                })
+                .map(|p| Pattern::new(p.strip_prefix('!').unwrap_or(p)).unwrap())
                 .collect::<Vec<_>>()
         };
 

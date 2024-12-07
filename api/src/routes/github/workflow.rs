@@ -4,7 +4,7 @@ use chrono::{DateTime, Duration, SecondsFormat};
 use hyper::StatusCode;
 use serde::Deserialize;
 use shared::{
-    ai::{self, ReleaseSummary},
+    ai,
     services::{
         github::{WorkflowRun, WorkflowRuns},
         slack, Git,
@@ -24,7 +24,7 @@ pub async fn release_summary(
         config::get_optional("JIRA_INTEGRATION_ENABLED").map_or(false, |v| v == "true");
 
     if !run.is_first_successful_attempt().await? {
-        tracing::info!("Unsuccessful attempt, skipping");
+        tracing::info!("Not first successful attempt, skipping");
         return Ok(StatusCode::OK);
     }
 
