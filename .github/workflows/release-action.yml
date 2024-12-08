@@ -86,3 +86,5 @@ jobs:
         with:
           artifacts: "Linux/Linux.tgz,macOS/macOS.tgz,Windows/Windows.tgz"
           tag: v${{ github.event.inputs.version }}
+          generateReleaseNotes: true
+          makeLatest: true
