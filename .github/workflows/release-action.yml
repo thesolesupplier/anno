@@ -1,27 +1,11 @@
 name: Release Action
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version to release'
-        required: true
+  release:
+    types: [released]
 
 jobs:
-  validate-version:
-    runs-on: ubuntu-latest
-    name : Validate Version
-    steps:
-      - name: Validate version input
-        run: |
-          if [[ ! "${{ github.event.inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Error: Version '${{ github.event.inputs.version }}' is not a valid semver format."
-            exit 1
-          fi
-          echo "Version '${{ github.event.inputs.version }}' is valid."
-
   build-artifacts:
-    needs: validate-version
     strategy:
       fail-fast: false
       matrix:
@@ -85,6 +69,7 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           artifacts: "Linux/Linux.tgz,macOS/macOS.tgz,Windows/Windows.tgz"
-          tag: v${{ github.event.inputs.version }}
+          tag: ${{ github.event.release.tag_name }}
           generateReleaseNotes: true
+          allowUpdates: true
           makeLatest: true
