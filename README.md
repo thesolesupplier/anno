@@ -3,7 +3,7 @@ Anno is a **GitHub Action** that leverages LLMs to summarise code changes releas
 
 <img src="docs/release_summary_example.png" alt="Release summary example" width="650">
 
-It can also be integrated with **Jira** to list titles and links for any ticket numbers found in your commit messages or branch names.
+It can also be integrated with **Jira** to include titles and links for any ticket numbers found in your commit messages or branch names.
 
 ## **Usage**
 
@@ -45,7 +45,13 @@ with:
   # Slack webhook URL for the release summary.
   # Required.
   slack_webhook_url: ""
+env:
+  # This should automatically be available as a secret. Used by the action to access the repository.
+  # Required.
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
+
+**Important:** The `GITHUB_TOKEN` secret is required for Anno to access the repository and fetch the necessary information.
 
 ## Monorepo Usage
 
