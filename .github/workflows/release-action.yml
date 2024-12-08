@@ -70,6 +70,18 @@ jobs:
         with:
           artifacts: "Linux/Linux.tgz,macOS/macOS.tgz,Windows/Windows.tgz"
           tag: ${{ github.event.release.tag_name }}
-          generateReleaseNotes: true
           allowUpdates: true
-          makeLatest: true
+
+      - name: Extract Major and Minor Versions
+        id: version_info
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Release tag: $RELEASE_TAG"
+          MAJOR_VERSION=${RELEASE_TAG%%.*}
+          MINOR_VERSION=${RELEASE_TAG%.*}
+          git tag -f $MAJOR_VERSION $RELEASE_TAG
+          git push origin $MAJOR_VERSION --force
+          git tag -f $MINOR_VERSION $RELEASE_TAG
+          git push origin $MINOR_VERSION --force
