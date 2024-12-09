@@ -65,7 +65,7 @@ impl ChatGpt {
             .header("content-type", "application/json")
             .bearer_auth(api_key)
             .json(&json!({
-                "model": model.unwrap_or_else(|| "gpt-4o".to_string()),
+                "model": model.as_deref().unwrap_or("gpt-4o"),
                 "temperature": 0.0,
                 "frequency_penalty": 0.3,
                 "messages": [

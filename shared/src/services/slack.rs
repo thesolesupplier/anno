@@ -100,7 +100,7 @@ fn get_summary_block(release_notes: &ReleaseNotes) -> Vec<Value> {
         let items = category
             .items
             .iter()
-            .map(|note| format!(r"  •   {note}"))
+            .map(|note| format!(r"  •  {note}"))
             .collect::<Vec<_>>()
             .join("\n");
 

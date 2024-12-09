@@ -1,8 +1,9 @@
 use crate::{ai::TestCases, utils::config};
 use anyhow::Result;
 use futures::future::try_join_all;
-use serde::Deserialize;
-use serde_json::{json, Value};
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+use std::fmt::Debug;
 use uuid::Uuid;
 
 #[derive(Deserialize)]
@@ -48,11 +49,69 @@ impl Issue {
     }
 
     pub async fn add_test_cases(&self, test_cases: TestCases) -> Result<()> {
+        let title = json!({
+            "type": "paragraph",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Test Cases",
+                    "marks": [{    "type": "strong"}]
+                }
+            ]
+        });
+
+        let test_cases: Vec<_> = test_cases
+            .cases
+            .into_iter()
+            .map(|case| {
+                json!({
+                    "type": "taskItem",
+                    "attrs": {
+                        "state": "TODO",
+                        "localId": Uuid::new_v4().to_string(),
+                    },
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": format!(" {}", case)
+                        }
+                    ]
+                })
+            })
+            .collect();
+
+        let content = json!([
+          {
+            "type": "panel",
+            "attrs": {
+              "panelType": "success"
+            },
+            "content": [title]
+          },
+          {
+            "type": "taskList",
+            "attrs": {
+              "localId": Uuid::new_v4().to_string()
+            },
+            "content": test_cases
+          }
+        ]);
+
+        let comment = json!({
+          "version": 1,
+          "type": "doc",
+          "content": content
+        });
+
+        self.add_comment(comment).await
+    }
+
+    async fn add_comment<T: Serialize + Debug>(&self, comment: T) -> Result<()> {
         let jira_integration_enabled = config::get("JIRA_INTEGRATION_ENABLED") == "true";
 
         if !jira_integration_enabled {
             println!("------ JIRA COMMENT ------");
-            println!("{test_cases:#?}");
+            println!("{comment:#?}");
             println!("--------------------------");
             return Ok(());
         }
@@ -68,7 +127,7 @@ impl Issue {
             .header("Accept", "application/json")
             .header("Content-Type", "application/json")
             .header("Authorization", format!("Basic {jira_api_key}"))
-            .json(&json!({ "body": format_test_cases(test_cases) }))
+            .json(&json!({ "body": comment }))
             .send()
             .await?
             .error_for_status()
@@ -181,59 +240,4 @@ pub struct CommentAuthor {
 pub struct IssueFields {
     pub summary: String,
     pub description: Option<String>,
-}
-
-fn format_test_cases(test_cases: TestCases) -> Value {
-    json!({
-      "version": 1,
-      "type": "doc",
-      "content": [
-        {
-          "type": "panel",
-          "attrs": {
-            "panelType": "success"
-          },
-          "content": [
-            {
-              "type": "paragraph",
-              "content": [
-                {
-                  "type": "text",
-                  "text": "Test Cases",
-                  "marks": [
-                    {
-                      "type": "strong"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "taskList",
-          "attrs": {
-            "localId": Uuid::new_v4().to_string()
-          },
-          "content": test_cases.cases
-          .into_iter()
-          .map(|case| {
-              json!({
-                  "type": "taskItem",
-                  "attrs": {
-                      "state": "TODO",
-                      "localId": Uuid::new_v4().to_string(),
-                  },
-                  "content": [
-                      {
-                          "type": "text",
-                          "text": format!(" {}", case)
-                      }
-                  ]
-              })
-          })
-          .collect::<Vec<Value>>()
-        }
-      ]
-    })
 }
