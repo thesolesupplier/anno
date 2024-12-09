@@ -1,4 +1,4 @@
-name: Anno
+name: Anno-bot
 description: Creates a release summary of code changes between workflow runs and sends it to a Slack channel.
 inputs:
   app_name:
@@ -59,7 +59,7 @@ runs:
         gh release download ${{ steps.get_action_version.outputs.version }} --repo ${{ env.action_org }}/${{ env.action_repo }} --pattern '${{ runner.os }}.tgz'
         tar -xzf ${{ runner.os }}.tgz
       env:
-        GITHUB_TOKEN: ${{ inputs.token }}
+        GH_TOKEN: ${{ github.token }}
 
     - name: Run Action
       shell: bash
