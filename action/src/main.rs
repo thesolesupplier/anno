@@ -20,6 +20,7 @@ async fn main() -> Result<(), AppError> {
 
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::INFO)
+        .with_target(false)
         .init();
 
     let run = WorkflowRun::get_by_id(&repo, &run_id).await?;
