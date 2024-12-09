@@ -33,7 +33,7 @@ runs:
       shell: bash
       run: |
         echo "action_repo=anno" >> $GITHUB_ENV
-        echo "action_org=The-Sole-Supplier" >> $GITHUB_ENV
+        echo "action_org=thesolesupplier" >> $GITHUB_ENV
         echo "binary_name=action" >> $GITHUB_ENV
 
     - name: Add binary extension

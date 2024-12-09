@@ -12,7 +12,7 @@ Place Anno as the **last job** in your workflow to ensure it runs only after all
 The minimum required inputs to get going are `chat_gpt_api_key` and `slack_webhook_url`.
 
 ```yaml
-uses: The-Sole-Supplier/anno@v1
+uses: thesolesupplier/anno@v1
 with:
   # App name for the Slack message.
   # Default: Repository name.
