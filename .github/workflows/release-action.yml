@@ -62,26 +62,38 @@ jobs:
     name: Create Release
     permissions:
       contents: write
+    env:
+      ARTIFACTS: "Linux/Linux.tgz,macOS/macOS.tgz,Windows/Windows.tgz"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
+
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "Linux/Linux.tgz,macOS/macOS.tgz,Windows/Windows.tgz"
+          artifacts: ${{ env.ARTIFACTS }}
           tag: ${{ github.event.release.tag_name }}
           allowUpdates: true
 
       - name: Extract Major and Minor Versions
         id: version_info
-        env:
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Release tag: $RELEASE_TAG"
-          MAJOR_VERSION=${RELEASE_TAG%%.*}
-          MINOR_VERSION=${RELEASE_TAG%.*}
-          git tag -f $MAJOR_VERSION $RELEASE_TAG
-          git push origin $MAJOR_VERSION --force
-          git tag -f $MINOR_VERSION $RELEASE_TAG
-          git push origin $MINOR_VERSION --force
+          RELEASE_TAG="${{ github.event.release.tag_name }}"
+          MAJOR_VERSION="${RELEASE_TAG%%.*}"
+          MINOR_VERSION="${RELEASE_TAG%.*}"
+          echo "major_version=$MAJOR_VERSION" >> $GITHUB_OUTPUT
+          echo "minor_version=$MINOR_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create Major Version Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: ${{ env.ARTIFACTS }}
+          tag: ${{ steps.version_info.outputs.major_version }}
+          allowUpdates: true
+
+      - name: Create Minor Version Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: ${{ env.ARTIFACTS }}
+          tag: ${{ steps.version_info.outputs.minor_version }}
+          allowUpdates: true
