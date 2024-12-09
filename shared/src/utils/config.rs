@@ -16,4 +16,6 @@ pub fn get_optional(var_name: &str) -> Option<String> {
         // Also check for INPUT_ prefixed environment variables for GitHub action
         .or_else(|_| env::var(format!("INPUT_{var_name}")))
         .ok()
+        // Check if the value is an empty string and return None if so
+        .and_then(|val| if val.is_empty() { None } else { Some(val) })
 }

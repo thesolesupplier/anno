@@ -10,6 +10,7 @@ inputs:
   chat_gpt_model:
     description: ChatGPT model to use. Defaults to `gpt-4o`.
     required: false
+    default: "gpt-4o"
   jira_integration_enabled:
     description: Enable Jira integration. Defaults to `false`.
     required: false
