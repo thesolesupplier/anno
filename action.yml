@@ -11,6 +11,9 @@ inputs:
     description: ChatGPT model to use. Defaults to `gpt-4o`.
     required: false
     default: "gpt-4o"
+  github_token:
+    description: GitHub token to access the repository. This should automatically be available as a secret.
+    required: true
   jira_integration_enabled:
     description: Enable Jira integration. Defaults to `false`.
     required: false
@@ -69,13 +72,14 @@ runs:
       env:
         APP_NAME: ${{ inputs.app_name }}
         CHAT_GPT_API_KEY: ${{ inputs.chat_gpt_api_key }}
+        CHAT_GPT_BASE_URL: https://api.openai.com/v1
         CHAT_GPT_MODEL: ${{ inputs.chat_gpt_model }}
-        JIRA_INTEGRATION_ENABLED: ${{ inputs.jira_integration_enabled }}
+        GITHUB_BASE_URL: https://api.github.com
+        GITHUB_TOKEN: ${{ inputs.github_token }}
         JIRA_API_KEY: ${{ inputs.jira_api_key }}
         JIRA_BASE_URL: ${{ inputs.jira_base_url }}
+        JIRA_INTEGRATION_ENABLED: ${{ inputs.jira_integration_enabled }}
         JIRA_PROJECT_KEY: ${{ inputs.jira_project_key }}
-        SLACK_WEBHOOK_URL: ${{ inputs.slack_webhook_url }}
-        CHAT_GPT_BASE_URL: https://api.openai.com/v1
-        GITHUB_BASE_URL: https://api.github.com
         REPOS_DIR: ./repos
         SLACK_MESSAGE_ENABLED: true
+        SLACK_WEBHOOK_URL: ${{ inputs.slack_webhook_url }}

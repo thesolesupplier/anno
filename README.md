@@ -7,9 +7,7 @@ It can also be integrated with **Jira** to include titles and links for any tick
 
 ## **Usage**
 
-Place Anno as the **last job** in your workflow to ensure it runs only after all other jobs complete successfully.
-
-The minimum required inputs to get going are `chat_gpt_api_key` and `slack_webhook_url`.
+The minimum required inputs to get going are `chat_gpt_api_key`, `slack_webhook_url` and `github_token`. The latter should be automatically available as a secret with permissions to access the repository.
 
 ```yaml
 uses: thesolesupplier/anno@v1
@@ -25,6 +23,10 @@ with:
   # ChatGPT model to use.
   # Default: `gpt-4o`.
   chat_gpt_model: ""
+
+  # GitHub token to access the repository. This should automatically be available as a secret.
+  # Required.
+  github_token: ${{ secrets.GITHUB_TOKEN }}
 
   # Enable Jira integration.
   # Default: `false`.
@@ -51,7 +53,20 @@ env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-**Important:** The `GITHUB_TOKEN` secret is required for Anno to access the repository and fetch the necessary information.
+**Important:** Ensure Anno requires the previous job(s) to complete first so that it only runs after your deployment is successful:
+
+```yaml
+jobs:
+  prod-deploy:
+    # Deployment steps...
+
+  anno:
+    uses: thesolesupplier/anno@v1
+    needs:
+      - prod-deploy
+      # Add other jobs here if needed.
+```
+
 
 ## Monorepo Usage
 

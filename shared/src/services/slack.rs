@@ -43,10 +43,12 @@ pub async fn post_release_message(
     let mut message_blocks: Vec<serde_json::Value> =
         Vec::from([get_header_block(app_name, workflow_run)]);
 
-    message_blocks.push(json!({ "type": "divider" }));
+    if !summary.items.is_empty() {
+        message_blocks.push(json!({ "type": "divider" }));
 
-    for block in get_summary_block(&summary) {
-        message_blocks.push(block);
+        for block in get_summary_block(&summary) {
+            message_blocks.push(block);
+        }
     }
 
     if !jira_issues.as_ref().map_or(false, |i| !i.is_empty()) || !pull_requests.is_empty() {
