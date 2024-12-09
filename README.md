@@ -7,7 +7,7 @@ It can also be integrated with **Jira** to include titles and links for any tick
 
 ## **Usage**
 
-The minimum required inputs to get going are `chat_gpt_api_key`, `slack_webhook_url` and `github_token`. The latter should be automatically available as a secret with permissions to access the repository.
+The minimum required inputs to get going are `chat_gpt_api_key`, `slack_webhook_url` and `github_token`. The latter should be automatically available as a secret.
 
 ```yaml
 uses: thesolesupplier/anno@v1
@@ -24,7 +24,7 @@ with:
   # Default: `gpt-4o`.
   chat_gpt_model: ""
 
-  # GitHub token to access the repository. This should automatically be available as a secret.
+  # GitHub token to access the repository. This should be automatically available as a secret.
   # Required.
   github_token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -47,13 +47,9 @@ with:
   # Slack webhook URL for the release summary.
   # Required.
   slack_webhook_url: ""
-env:
-  # This should automatically be available as a secret. Used by the action to access the repository.
-  # Required.
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-**Important:** Ensure Anno requires the previous job(s) to complete first so that it only runs after your deployment is successful:
+**Important:** Ensure Anno requires the previous job(s) to complete first so that it runs only after your deployment is successful:
 
 ```yaml
 jobs:
@@ -64,7 +60,7 @@ jobs:
     uses: thesolesupplier/anno@v1
     needs:
       - prod-deploy
-      # Add other jobs here if needed.
+      # Other jobs here if needed.
 ```
 
 
