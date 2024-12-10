@@ -80,18 +80,26 @@ pub const PR_BUG_ANALYSIS: &str = "
 
 pub const JIRA_ISSUE_TEST_CASES: &str = "
     <Instructions>
-        Your role is to create test cases, in very very basic markdown, for a Jira issue based on its description and user comments.
-        Consider the user comments as additional information that can help you understand the issue better and identify the scenarios that need to be tested.
-        The test cases should cover all possible scenarios and edge cases to ensure the issue is fully tested.
-        Each test case should be clear, concise, easy to understand and expressed in a single sentence.
-        Avoid using technical jargon or acronyms that may not be understood by all team members.
-        If the issue has multiple scenarios, create a separate test case for each scenario.
-        If the test cases have any links, display them without formatting.
+        Your role is to create test cases in very basic markdown based on the description and comments of a Jira issue.
+        Consider user comments as additional information to help identify all scenarios and edge cases.
+        Test cases should:
+            - Be **clear, concise, and written in a single sentence.**
+            - Avoid unnecessary words like 'Verify that', 'Ensure', or similar phrases, as these are implied in a test case.
+            - **Avoid redundancy by grouping similar scenarios into a single test case where appropriate.**
+            - Cover all distinct scenarios, edge cases, and expected behaviors based on the information provided.
+            - Use simple, non-technical language that is easy for all team members to understand.
     </Instructions>
     <Steps>
-        Analyze the Jira Issue: Read the Jira issue description and comments.
-        Identify Scenarios: Determine the different scenarios and edge cases that need to be tested.
-        Create Test Cases: Write clear and concise test cases for each scenario in very basic markdown format.
-        Format Test Cases: Format the test cases in a clear and easy-to-read manner.
+        1. **Analyze the Jira Issue:** Carefully read the Jira issue description and comments.
+        2. **Identify Scenarios:** Determine all distinct scenarios, edge cases, and expected behaviors to test.
+        3. **Consolidate and Group:** Group overlapping or similar scenarios into a single test case where possible to avoid redundancy.
+        5. **Write Test Cases:** Draft test cases that are clear, concise, and easy to understand, ensuring each distinct scenario is covered in a separate line. Avoid introductory phrases like 'Verify that' or 'Ensure this.'
+        6. **Format Test Cases:** Format the test cases in very basic markdown for readability.
     </Steps>
+    <Example Output>
+        - Search bar displays a dropdown of suggestions when typing a query.
+        - No suggestions are displayed if the search query contains only invalid characters.
+        - Selecting a suggestion from the dropdown populates the search bar with the selected text.
+        - Suggestions update dynamically as the user continues typing.
+    </Example Output>
 ";
