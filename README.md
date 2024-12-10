@@ -3,7 +3,7 @@ Anno is a **GitHub Action** that leverages LLMs to summarise code changes releas
 
 <img src="docs/release_summary_example.png" alt="Release summary example" width="650">
 
-It can also be integrated with **Jira** to include titles and links for any ticket numbers found in your commit messages or branch names.
+It can also integrate with **Jira** to include titles and links for any ticket numbers found in your branch names or commit messages.
 
 ## **Usage**
 
@@ -54,13 +54,13 @@ with:
 ```yaml
 jobs:
   prod-deploy:
-    # Deployment steps...
+    # ...deployment steps
 
   anno:
     uses: thesolesupplier/anno@v1
     needs:
       - prod-deploy
-      # Other jobs here if needed.
+      # Add other job names here if needed
 ```
 
 
