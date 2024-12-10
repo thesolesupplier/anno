@@ -11,7 +11,7 @@ impl ChatGpt {
         diff: &str,
         commit_messages: &[String],
     ) -> Result<ReleaseNotes> {
-        tracing::info!("Fetching AI release summary");
+        tracing::info!("Generating release summary");
 
         let commit_messages = commit_messages.join("\n");
 

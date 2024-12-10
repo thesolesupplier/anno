@@ -8,7 +8,7 @@ pub struct Claude;
 
 impl Claude {
     pub async fn get_pr_bug_analysis(diff: &str, commit_messages: &[String]) -> Result<String> {
-        tracing::info!("Fetching AI PR bug analysis");
+        tracing::info!("Generating PR analysis");
 
         let commit_messages = commit_messages.join("\n");
 

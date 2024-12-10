@@ -18,6 +18,8 @@ impl Issue {
         let jira_base_url = config::get("JIRA_BASE_URL");
         let jira_api_key = config::get("JIRA_API_KEY");
 
+        tracing::info!("Fetching Jira issue #{key}");
+
         let response = match reqwest::Client::new()
             .get(format!("{jira_base_url}/rest/api/2/issue/{key}"))
             .header("Accept", "application/json")
@@ -28,11 +30,10 @@ impl Issue {
         {
             Ok(res) => res,
             Err(err) => {
-                tracing::error!("Error getting Jira issue: {err}");
-
                 if err.status() == Some(reqwest::StatusCode::NOT_FOUND) {
                     return Ok(None);
                 } else {
+                    tracing::error!("Error fetching Jira issue: {err}");
                     Err(err)
                 }
             }?,
