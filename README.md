@@ -49,7 +49,7 @@ with:
   slack_webhook_url: ""
 ```
 
-**Important:** Ensure Anno requires the previous job(s) to complete first so that it runs only after your deployment is successful:
+**Note:** Ensure Anno requires the previous job(s) to complete first so that it runs only after your deployment is successful:
 
 ```yaml
 jobs:
@@ -78,8 +78,8 @@ on:
 
 If neither are specified, Anno will default to the entire repository.
 
-## API Alternative
+## API Features
 
-Anno can also be deployed as an AWS HTTP Lambda that integrates with Jira and GitHub webhook events. In addition to summarising releases, it can review pull requests and add test cases to Jira issues.
+Anno also has an API that can be deployed as an AWS HTTP Lambda that integrates with Jira and GitHub webhooks to review pull requests and add test cases to Jira issues.
 
 For more details, see the API's [README](api/README.md).

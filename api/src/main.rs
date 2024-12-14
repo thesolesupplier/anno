@@ -35,12 +35,10 @@ async fn main() {
         .route("/jira/issue/:key/status", post(routes::jira::issue::status))
         .nest(
             "/github",
-            Router::new()
-                .route(
-                    "/pull-request/bugs",
-                    post(routes::github::pull_request::bug_analysis),
-                )
-                .route("/workflow", post(routes::github::workflow::release_summary)),
+            Router::new().route(
+                "/pull-request/bugs",
+                post(routes::github::pull_request::bug_analysis),
+            ),
         )
         .layer(cors_layer)
         .layer(TraceLayer::new_for_http())
