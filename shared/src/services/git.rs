@@ -10,8 +10,6 @@ pub struct Git {
 
 impl Git {
     pub async fn init(full_name: &str) -> Result<Self> {
-        tracing::info!("Initialising {full_name} repository");
-
         let repos_dir = config::get("REPOS_DIR");
         let gh_token = AccessToken::get().await?;
 
@@ -21,7 +19,7 @@ impl Git {
 
         let repo = match git2::Repository::open(&repo_disk_path) {
             Ok(repo) => {
-                tracing::info!("Repository already cloned, pulling latest changes");
+                tracing::info!("{full_name} repository already cloned, pulling latest changes");
 
                 repo.find_remote("origin")?.fetch(
                     &["master"],
@@ -32,7 +30,7 @@ impl Git {
                 repo
             }
             Err(_) => {
-                tracing::info!("Cloning repository");
+                tracing::info!("Cloning {full_name} repository");
                 git2::Repository::clone(&repo_url, &repo_disk_path)?
             }
         };

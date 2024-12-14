@@ -17,7 +17,7 @@ pub struct MessageInput<'a> {
     pub summary: ReleaseNotes,
 }
 
-pub async fn post_release_message(
+pub async fn post_release_summary(
     MessageInput {
         app_name,
         jira_issues,
@@ -36,7 +36,7 @@ pub async fn post_release_message(
         return Ok(());
     }
 
-    tracing::info!("Posting slack message");
+    tracing::info!("Posting release summary to Slack");
 
     let webhook_url = config::get("SLACK_WEBHOOK_URL");
 

@@ -84,7 +84,7 @@ pub struct WorkflowRun {
 
 impl WorkflowRun {
     pub async fn get_by_id(full_repo_name: &String, run_id: &String) -> Result<Self> {
-        tracing::info!("Fetching workflow run '{run_id}'");
+        tracing::info!("Fetching workflow run {run_id}");
 
         let gh_token = AccessToken::get().await?;
         let url = format!("https://api.github.com/repos/{full_repo_name}/actions/runs/{run_id}");

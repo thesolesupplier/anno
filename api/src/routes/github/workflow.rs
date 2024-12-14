@@ -72,7 +72,7 @@ pub async fn release_summary(
     let pull_requests = commits::get_pull_requests(&run.repository, &commit_messages).await?;
     let summary = ai::ChatGpt::get_release_summary(&diff, &commit_messages).await?;
 
-    slack::post_release_message(slack::MessageInput {
+    slack::post_release_summary(slack::MessageInput {
         app_name: workflow_config.get_app_name(),
         jira_issues,
         prev_run: &prev_run,

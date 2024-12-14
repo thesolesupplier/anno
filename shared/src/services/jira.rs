@@ -18,7 +18,7 @@ impl Issue {
         let jira_base_url = config::get("JIRA_BASE_URL");
         let jira_api_key = config::get("JIRA_API_KEY");
 
-        tracing::info!("Fetching Jira issue #{key}");
+        tracing::info!("Fetching Jira issue {key}");
 
         let response = match reqwest::Client::new()
             .get(format!("{jira_base_url}/rest/api/2/issue/{key}"))
