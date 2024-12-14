@@ -106,7 +106,7 @@ impl PullRequest {
             .bearer_auth(gh_token)
             .header("Accept", "application/json")
             .header("User-Agent", "Anno")
-            .json(&json!({ "body": comment }))
+            .json(&json!({ "body": format!("<!-- anno -->{comment}") }))
             .send()
             .await?
             .error_for_status()
@@ -168,9 +168,7 @@ pub struct PullRequestComment {
 
 impl PullRequestComment {
     pub fn is_by_anno_bot(&self) -> bool {
-        let bot_user_id = config::get("GITHUB_BOT_USER_ID");
-
-        self.user.id.to_string() == bot_user_id
+        self.body.starts_with("<!-- anno -->")
     }
 
     pub async fn mark_as_outdated(&self) -> Result<()> {
@@ -209,7 +207,6 @@ impl PullRequestComment {
 
 #[derive(Deserialize)]
 pub struct User {
-    id: i64,
     r#type: UserType,
 }
 

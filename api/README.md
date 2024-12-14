@@ -23,7 +23,6 @@ The following environment variables are **required**:
 - `GITHUB_APP_INSTALLATION_ID`
 - `GITHUB_APP_PRIVATE_KEY_BASE64`
 - `GITHUB_BASE_URL`
-- `GITHUB_BOT_USER_ID`
 - `GITHUB_WEBHOOK_SECRET`
 
 ### Jira Test Cases

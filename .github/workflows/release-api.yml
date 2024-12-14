@@ -62,7 +62,6 @@ jobs:
             --env-var GITHUB_APP_INSTALLATION_ID=53127890 \
             --env-var GITHUB_APP_PRIVATE_KEY_BASE64=${{ secrets.GH_APP_PRIVATE_KEY_BASE64 }} \
             --env-var GITHUB_BASE_URL=https://api.github.com \
-            --env-var GITHUB_BOT_USER_ID=176515466 \
             --env-var GITHUB_WEBHOOK_SECRET=${{ secrets.GH_WEBHOOK_SECRET }} \
             --env-var JIRA_API_KEY=${{ secrets.JIRA_API_KEY }} \
             --env-var JIRA_BASE_URL=https://thesolesupplier.atlassian.net \
