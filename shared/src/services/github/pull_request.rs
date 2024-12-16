@@ -1,9 +1,9 @@
 use super::{repository::Commit, AccessToken, IGNORED_REPO_PATHS};
 use crate::utils::config;
 use anyhow::Result;
-use futures::future::try_join_all;
 use serde::Deserialize;
 use serde_json::json;
+use std::cmp::Reverse;
 
 #[derive(Deserialize)]
 pub struct PullRequest {
@@ -87,6 +87,19 @@ impl PullRequest {
         Ok(all_messages)
     }
 
+    pub async fn get_anno_comments(&self) -> Result<Vec<Comment>> {
+        let mut comments: Vec<_> = self
+            .list_comments()
+            .await?
+            .into_iter()
+            .filter(|c| c.is_by_anno())
+            .collect();
+
+        comments.sort_by_key(|c| Reverse(c.created_at.clone()));
+
+        Ok(comments)
+    }
+
     pub async fn add_comment(&self, comment: &str) -> Result<()> {
         tracing::info!("Adding pull request #{} comment", &self.number);
 
@@ -115,30 +128,27 @@ impl PullRequest {
         Ok(())
     }
 
-    pub async fn hide_outdated_comments(&self) -> Result<()> {
-        tracing::info!("Hiding outdated pull request {} comments", &self.number);
-
+    pub async fn clear_prev_comments(&self, comments: &[Comment]) -> Result<()> {
         let pr_comment_enabled = config::get("PR_COMMENT_ENABLED") == "true";
 
         if !pr_comment_enabled {
             return Ok(());
         }
 
-        let bot_comments: Vec<PullRequestComment> = self
-            .get_comments()
-            .await?
-            .into_iter()
-            .filter(|c| c.is_by_anno_bot())
-            .collect();
+        let (lgtms, not_lgtms) = comments.iter().partition::<Vec<_>, _>(|c| c.is_lgtm());
 
-        let hide_requests: Vec<_> = bot_comments.iter().map(|c| c.mark_as_outdated()).collect();
+        if let Some(prev_lgtm) = lgtms.first() {
+            prev_lgtm.delete().await?;
+        }
 
-        try_join_all(hide_requests).await?;
+        if let Some(prev_not_lgtm) = not_lgtms.first() {
+            prev_not_lgtm.hide_as_outdated().await?;
+        }
 
         Ok(())
     }
 
-    async fn get_comments(&self) -> Result<Vec<PullRequestComment>> {
+    async fn list_comments(&self) -> Result<Vec<Comment>> {
         tracing::info!("Getting pull request #{} comments", &self.number);
 
         let gh_token = AccessToken::get().await?;
@@ -153,7 +163,7 @@ impl PullRequest {
             .await?
             .error_for_status()
             .inspect_err(|e| tracing::error!("Error getting GitHub comments: {e}"))?
-            .json::<Vec<PullRequestComment>>()
+            .json::<Vec<Comment>>()
             .await?;
 
         Ok(comments)
@@ -161,17 +171,23 @@ impl PullRequest {
 }
 
 #[derive(Deserialize)]
-pub struct PullRequestComment {
-    user: User,
+pub struct Comment {
+    body: String,
+    url: String,
     node_id: String,
+    created_at: String,
 }
 
-impl PullRequestComment {
-    pub fn is_by_anno_bot(&self) -> bool {
+impl Comment {
+    pub fn is_lgtm(&self) -> bool {
+        self.is_by_anno() && self.body.contains("LGTM")
+    }
+
+    pub fn is_by_anno(&self) -> bool {
         self.body.starts_with("<!-- anno -->")
     }
 
-    pub async fn mark_as_outdated(&self) -> Result<()> {
+    pub async fn hide_as_outdated(&self) -> Result<()> {
         tracing::info!("Marking comment {} as outdated", &self.node_id);
 
         let gh_token = AccessToken::get().await?;
@@ -200,6 +216,24 @@ impl PullRequestComment {
             .await?
             .error_for_status()
             .inspect_err(|e| tracing::error!("Error hiding GitHub comment: {e}"))?;
+
+        Ok(())
+    }
+
+    pub async fn delete(&self) -> Result<()> {
+        tracing::info!("Deleting comment {}", &self.node_id);
+
+        let gh_token = AccessToken::get().await?;
+
+        reqwest::Client::new()
+            .delete(&self.url)
+            .bearer_auth(gh_token)
+            .header("Accept", "application/json")
+            .header("User-Agent", "Anno")
+            .send()
+            .await?
+            .error_for_status()
+            .inspect_err(|e| tracing::error!("Error deleting GitHub comment: {e}"))?;
 
         Ok(())
     }

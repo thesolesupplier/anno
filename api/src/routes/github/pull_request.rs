@@ -22,19 +22,27 @@ pub async fn bug_analysis(
     }
 
     if action != "opened" && action != "synchronize" {
-        tracing::info!("Is ignored action '{action}', skipping");
+        tracing::info!("Is ignored '{action}' action, skipping");
         return Ok(StatusCode::OK);
     }
 
     let diff = pr.get_diff().await?;
     let commit_messages = pr.get_commit_messages().await?;
-
     let analysis = ai::Claude::get_pr_bug_analysis(&diff, &commit_messages).await?;
 
-    if action == "synchronize" {
-        pr.hide_outdated_comments().await?;
+    if action == "opened" {
+        pr.add_comment(&analysis).await?;
+        return Ok(StatusCode::OK);
     }
 
+    let anno_comments = pr.get_anno_comments().await?;
+    let is_prev_lgtm = anno_comments.first().map_or(false, |c| c.is_lgtm());
+
+    if analysis.contains("LGTM") && is_prev_lgtm {
+        return Ok(StatusCode::OK);
+    }
+
+    pr.clear_prev_comments(&anno_comments).await?;
     pr.add_comment(&analysis).await?;
 
     Ok(StatusCode::OK)

@@ -7,7 +7,12 @@ It can also integrate with **Jira** to include titles and links for any ticket n
 
 ## **Usage**
 
-The minimum required inputs to get going are `chat_gpt_api_key`, `slack_webhook_url` and `github_token`. The latter should be automatically available as a secret.
+The minimum required inputs are:
+- `chat_gpt_api_key`
+- `slack_webhook_url`
+- `github_token`
+
+The latter should be automatically available as a secret.
 
 ```yaml
 uses: thesolesupplier/anno@v1
