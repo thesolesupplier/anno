@@ -26,7 +26,7 @@ impl WorkflowRuns {
             }
 
             for prev_run in prev_runs {
-                if prev_run.name == run.name
+                if prev_run.path == run.path
                     && prev_run.head_sha != run.head_sha
                     && prev_run.has_successful_attempt().await?
                 {
@@ -53,7 +53,7 @@ impl WorkflowRuns {
             .header("Accept", "application/json")
             .header("User-Agent", "Anno")
             .query(&[
-                ("exclude_pull_requests", "true"),
+                ("event", &run.event),
                 ("created", &format!("<{}", run.created_at)),
                 ("page", &page.to_string()),
             ])
@@ -75,6 +75,7 @@ pub struct WorkflowRun {
     pub repository: Repository,
     pub actor: WorkflowRunActor,
     pub head_commit: WorkflowRunCommit,
+    pub event: String,
     path: String,
     created_at: String,
     conclusion: Option<String>,
