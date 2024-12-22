@@ -182,7 +182,6 @@ impl WorkflowRun {
 #[derive(Deserialize)]
 pub struct WorkflowConfig {
     on: Option<WorkflowOnConfig>,
-    env: Option<WorkflowEnvVariables>,
 }
 
 impl WorkflowConfig {
@@ -196,17 +195,6 @@ impl WorkflowConfig {
 
     pub fn get_target_paths(&self) -> Option<WorkflowTargetPaths> {
         WorkflowTargetPaths::from_workflow_config(self)
-    }
-
-    pub fn get_app_name(&self) -> Option<&str> {
-        self.env.as_ref()?.app_name.as_deref()
-    }
-
-    pub fn has_summary_enabled(&self) -> bool {
-        self.env
-            .as_ref()
-            .and_then(|e| e.summary_enabled.as_ref().map(|e| e == "true"))
-            .unwrap_or(false)
     }
 }
 
@@ -262,14 +250,6 @@ impl WorkflowTargetPaths {
             .map(|p| special_char_regex.replace_all(p.as_str(), "").to_string())
             .collect()
     }
-}
-
-#[derive(Deserialize)]
-struct WorkflowEnvVariables {
-    #[serde(rename = "ANNO_APP_NAME")]
-    app_name: Option<String>,
-    #[serde(rename = "ANNO_SUMMARY_ENABLED")]
-    summary_enabled: Option<String>,
 }
 
 #[derive(Deserialize)]

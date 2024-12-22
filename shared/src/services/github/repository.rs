@@ -1,8 +1,7 @@
 use super::{pull_request::PullRequest, workflow::WorkflowTargetPaths, AccessToken};
 use anyhow::Result;
 use regex_lite::Regex;
-use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct Repository {
@@ -10,7 +9,6 @@ pub struct Repository {
     pub name: String,
     pulls_url: String,
     compare_url: String,
-    commits_url: String,
     contents_url: String,
 }
 
@@ -144,140 +142,6 @@ impl Repository {
             })
             .collect::<Vec<_>>()
             .join("\n")
-    }
-
-    pub async fn fetch_commit_messages_in_range(
-        &self,
-        (from, to): (&str, &str),
-        target_paths: &Option<WorkflowTargetPaths>,
-    ) -> Result<Vec<String>> {
-        tracing::info!("Fetching commits between {from} - {to}");
-
-        // If no target_paths is provided we get all commit messages and return
-        // them because we know it's not a mono-repo and they are all relevant.
-        let Some(target_paths) = target_paths else {
-            let messages = self
-                .list_commits(&[("since", from), ("until", to)])
-                .await?
-                .into_iter()
-                .map(|c| c.commit.message)
-                .collect();
-
-            return Ok(messages);
-        };
-
-        // If target_paths is provided, first we get all commits that affected
-        // files with any of the target_paths in their paths.
-        let mut messages = HashSet::new();
-
-        for path in &target_paths.get_sanitised_included() {
-            for commit in self
-                .list_commits(&[("since", from), ("until", to), ("path", path)])
-                .await?
-            {
-                messages.insert(commit.commit.message);
-            }
-        }
-
-        // Then we get all commits and filter for PR merges because the GitHub API
-        // excludes these from its response when querying by path (for some reason).
-        let pr_merge_commits: Vec<Commit> = self
-            .list_commits(&[("since", from), ("until", to)])
-            .await?
-            .into_iter()
-            .filter(|c| c.commit.message.starts_with("Merge pull request"))
-            .collect();
-
-        let pr_number_regex = Regex::new(r"#(\d+)").unwrap();
-
-        // Finally we check each PR number to see if it affected any files with
-        // the target_paths in their paths and include the commit message if it did.
-        for Commit { commit } in &pr_merge_commits {
-            let Some(pr_number) = pr_number_regex
-                .captures(&commit.message)
-                .and_then(|c| c.get(1).map(|f| f.as_str()))
-            else {
-                continue;
-            };
-
-            let mut page = 1;
-            loop {
-                let files = self.get_pull_request_files(pr_number, page).await?;
-
-                if files.is_empty() {
-                    break;
-                }
-
-                let has_affected_target_files =
-                    files.iter().any(|f| target_paths.is_included(&f.filename));
-
-                if has_affected_target_files {
-                    messages.insert(commit.message.clone());
-                    break;
-                }
-
-                page += 1;
-            }
-        }
-
-        Ok(messages.into_iter().collect())
-    }
-
-    async fn list_commits<T: Serialize + ?Sized>(&self, query: &T) -> Result<Vec<Commit>> {
-        let gh_token = AccessToken::get().await?;
-        let url = self.commits_url.replace("{/sha}", "");
-
-        let mut all_commits: Vec<Commit> = Vec::new();
-        let mut page = 1;
-        loop {
-            tracing::info!("Listing page {page} of commits");
-
-            let commits: Vec<Commit> = reqwest::Client::new()
-                .get(&url)
-                .bearer_auth(gh_token)
-                .header("Accept", "application/json")
-                .header("User-Agent", "Anno")
-                .query(query)
-                .query(&[("page", page), ("per_page", 100)])
-                .send()
-                .await?
-                .error_for_status()
-                .inspect_err(|e| tracing::error!("Error listing commits: {e}"))?
-                .json()
-                .await?;
-
-            if commits.is_empty() {
-                break;
-            }
-
-            all_commits.extend(commits);
-
-            page += 1;
-        }
-
-        Ok(all_commits)
-    }
-
-    async fn get_pull_request_files(&self, id: &str, page: u8) -> Result<Vec<PullRequestFile>> {
-        tracing::info!("Listing page {page} of pull request #{id} files");
-
-        let gh_token = AccessToken::get().await?;
-        let url = self.pulls_url.replace("{/number}", &format!("/{id}/files"));
-
-        let files: Vec<PullRequestFile> = reqwest::Client::new()
-            .get(&url)
-            .bearer_auth(gh_token)
-            .header("Accept", "application/json")
-            .header("User-Agent", "Anno")
-            .query(&[("page", page), ("per_page", 100)])
-            .send()
-            .await?
-            .error_for_status()
-            .inspect_err(|e| tracing::error!("Error fetching PR files: {e}"))?
-            .json()
-            .await?;
-
-        Ok(files)
     }
 }
 
