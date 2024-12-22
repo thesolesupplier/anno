@@ -186,7 +186,7 @@ pub struct WorkflowConfig {
 
 impl WorkflowConfig {
     pub fn from_base64_str(content: &str) -> Result<Self> {
-        let decoded_config = BASE64_STANDARD.decode(content.replace("\n", ""))?;
+        let decoded_config = BASE64_STANDARD.decode(content.replace('\n', ""))?;
         let config_content = String::from_utf8(decoded_config)?;
         let config = serde_yaml::from_str(&config_content)?;
 
@@ -243,7 +243,7 @@ impl WorkflowTargetPaths {
     }
 
     pub fn get_sanitised_included(&self) -> Vec<String> {
-        let special_char_regex = Regex::new(r"[*\[\]?!+]").unwrap();
+        let special_char_regex = Regex::new(r"[*\[\]?!+]").expect("Valid regex");
 
         self.included
             .iter()

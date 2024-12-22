@@ -53,9 +53,9 @@ impl Repository {
 
                 if err.status() == Some(reqwest::StatusCode::NOT_FOUND) {
                     return Ok(None);
-                } else {
-                    Err(err)
                 }
+
+                Err(err)
             }?,
         };
 

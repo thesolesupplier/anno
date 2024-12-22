@@ -32,10 +32,10 @@ impl Issue {
             Err(err) => {
                 if err.status() == Some(reqwest::StatusCode::NOT_FOUND) {
                     return Ok(None);
-                } else {
-                    tracing::error!("Error fetching Jira issue: {err}");
-                    Err(err)
                 }
+
+                tracing::error!("Error fetching Jira issue: {err}");
+                Err(err)
             }?,
         };
 

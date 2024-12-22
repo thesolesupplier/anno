@@ -31,7 +31,7 @@ where
             let token = config::get("GITHUB_WEBHOOK_SECRET");
             let signature = parts.headers.get("X-Hub-Signature-256");
 
-            validate_body(signature, &body_as_bytes, token).await?;
+            validate_body(signature, &body_as_bytes, token)?;
         }
 
         let value = deseralise_body(body_as_bytes)?;
@@ -61,7 +61,7 @@ where
             let token = config::get("JIRA_WEBHOOK_SECRET");
             let signature = parts.headers.get("x-hub-signature");
 
-            validate_body(signature, &body_as_bytes, token).await?;
+            validate_body(signature, &body_as_bytes, token)?;
         }
 
         let value = deseralise_body(body_as_bytes)?;
@@ -70,7 +70,7 @@ where
     }
 }
 
-async fn validate_body(
+fn validate_body(
     signature_header: Option<&HeaderValue>,
     body: &Bytes,
     token: String,
