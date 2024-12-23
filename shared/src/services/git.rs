@@ -14,7 +14,7 @@ impl Git {
         let gh_token = AccessToken::get().await?;
 
         let repo_name = full_name.split('/').last().unwrap_or(full_name);
-        let repo_url = format!("https://x-access-token:{gh_token}@github.com/{}", full_name);
+        let repo_url = format!("https://x-access-token:{gh_token}@github.com/{full_name}");
         let repo_disk_path = format!("{repos_dir}/{}", repo_name.replace('-', "_"));
 
         let repo = match git2::Repository::open(&repo_disk_path) {

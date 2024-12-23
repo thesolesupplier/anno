@@ -66,20 +66,10 @@ impl JiraChangeLogItem {
     }
 
     fn is_to_status(&self, status: &str) -> bool {
-        self.field == "status"
-            && self
-                .to_string
-                .as_ref()
-                .map(|s| s == status)
-                .unwrap_or(false)
+        self.field == "status" && self.to_string.as_ref().is_some_and(|s| s == status)
     }
 
     fn is_from_status(&self, status: &str) -> bool {
-        self.field == "status"
-            && self
-                .from_string
-                .as_ref()
-                .map(|s| s == status)
-                .unwrap_or(false)
+        self.field == "status" && self.from_string.as_ref().is_some_and(|s| s == status)
     }
 }
