@@ -9,14 +9,14 @@ axum.workspace = true
 base64 = "0.22.1"
 chrono.workspace = true
 dotenv.workspace = true
-futures = "0.3.30"
+futures.workspace = true
 git2 = "0.18.3"
 glob = "0.3.1"
 hex = "0.4.3"
 hyper.workspace = true
 jsonwebtoken = "9.3.0"
 openssl = {version = "0.10.64", features = ["vendored"]}
-regex-lite = "0.1.6"
+regex-lite.workspace = true
 reqwest = {version = "0.12.4", features = ["json"]}
 serde.workspace = true
 serde_json.workspace = true

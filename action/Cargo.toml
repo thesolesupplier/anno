@@ -6,6 +6,8 @@ version = "0.1.0"
 [dependencies]
 anyhow.workspace = true
 dotenv.workspace = true
+futures.workspace = true
+regex-lite.workspace = true
 shared.workspace = true
 tokio.workspace = true
 tracing-subscriber.workspace = true

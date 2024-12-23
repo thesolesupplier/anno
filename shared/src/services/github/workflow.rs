@@ -12,11 +12,12 @@ pub struct WorkflowRuns {
 }
 
 impl WorkflowRuns {
-    pub async fn get_prev_successful_run(
+    pub async fn get_prev_and_last_successful_runs(
         run: &WorkflowRun,
-    ) -> Result<Option<WorkflowRun>, AppError> {
+    ) -> Result<Option<PrevRuns>, AppError> {
         tracing::info!("Fetching previous successful run");
 
+        let mut all_prev_runs: Vec<WorkflowRun> = Vec::new();
         let mut page = 1;
         loop {
             let prev_runs = Self::get_prev_runs(run, page).await?.workflow_runs;
@@ -26,12 +27,18 @@ impl WorkflowRuns {
             }
 
             for prev_run in prev_runs {
-                if prev_run.path == run.path
-                    && prev_run.head_sha != run.head_sha
-                    && prev_run.has_successful_attempt().await?
-                {
-                    return Ok(Some(prev_run));
+                if prev_run.path != run.path {
+                    continue;
                 }
+
+                if prev_run.has_successful_attempt().await? {
+                    return Ok(Some(PrevRuns {
+                        last_successful: prev_run,
+                        prev_runs: all_prev_runs,
+                    }));
+                }
+
+                all_prev_runs.push(prev_run);
             }
 
             page += 1;
@@ -66,6 +73,11 @@ impl WorkflowRuns {
 
         Ok(runs)
     }
+}
+
+pub struct PrevRuns {
+    pub last_successful: WorkflowRun,
+    pub prev_runs: Vec<WorkflowRun>,
 }
 
 #[derive(Deserialize)]

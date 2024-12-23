@@ -3,7 +3,7 @@ Anno is a **GitHub Action** that leverages LLMs to summarise code changes releas
 
 <img src="docs/release_summary_example.png" alt="Release summary example" width="650">
 
-It can also integrate with **Jira** to include titles and links for any ticket numbers found in your branch names or commit messages.
+It can also integrate with **Jira** to include titles and links for any issue numbers found in associated pull requests, branch names, or commit messages.
 
 ## **Usage**
 

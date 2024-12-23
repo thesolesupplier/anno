@@ -12,6 +12,7 @@ pub struct PullRequest {
     pub html_url: String,
     pub body: Option<String>,
     pub user: User,
+    pub head: Head,
     url: String,
     comments_url: String,
     commits_url: String,
@@ -168,6 +169,11 @@ impl PullRequest {
 
         Ok(comments)
     }
+}
+
+#[derive(Deserialize)]
+pub struct Head {
+    pub r#ref: String,
 }
 
 #[derive(Deserialize)]

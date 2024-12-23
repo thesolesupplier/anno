@@ -10,6 +10,7 @@ pub struct Repository {
     pulls_url: String,
     compare_url: String,
     contents_url: String,
+    commits_url: String,
 }
 
 const IGNORED_REPO_PATHS: [&str; 9] = [
@@ -30,6 +31,27 @@ impl Repository {
             "https://github.com/{}/compare/{}...{}",
             self.full_name, old_sha, new_sha
         )
+    }
+
+    pub async fn get_pull_requests_for_commit(&self, sha: &str) -> Result<Vec<PullRequest>> {
+        tracing::info!("Fetching associated pull requests for {sha}");
+
+        let gh_token = AccessToken::get().await?;
+        let url = self.commits_url.replace("{/sha}", &format!("/{sha}/pulls"));
+
+        let response = reqwest::Client::new()
+            .get(url)
+            .bearer_auth(gh_token)
+            .header("Accept", "application/json")
+            .header("User-Agent", "Anno")
+            .send()
+            .await?
+            .error_for_status()
+            .inspect_err(|e| tracing::error!("Error getting associated PRs: {e}"))?
+            .json::<Vec<PullRequest>>()
+            .await?;
+
+        Ok(response)
     }
 
     pub async fn get_pull_request(&self, id: &str) -> Result<Option<PullRequest>> {
