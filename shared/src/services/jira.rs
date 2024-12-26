@@ -108,9 +108,9 @@ impl Issue {
     }
 
     async fn add_comment<T: Serialize + Debug>(&self, comment: T) -> Result<()> {
-        let jira_integration_enabled = config::get("JIRA_INTEGRATION_ENABLED") == "true";
+        let jira_enabled = config::get_optional("JIRA_API_KEY").is_some();
 
-        if !jira_integration_enabled {
+        if !jira_enabled {
             println!("------ JIRA COMMENT ------");
             println!("{comment:#?}");
             println!("--------------------------");
@@ -149,9 +149,9 @@ impl Issue {
     }
 
     pub async fn delete_outdated_comments(&self) -> Result<()> {
-        let jira_integration_enabled = config::get("JIRA_INTEGRATION_ENABLED") == "true";
+        let jira_enabled = config::get_optional("JIRA_API_KEY").is_some();
 
-        if !jira_integration_enabled {
+        if !jira_enabled {
             return Ok(());
         }
 

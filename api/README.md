@@ -32,7 +32,6 @@ Expects an [issue_updated](https://developer.atlassian.com/cloud/jira/platform/w
 
 The following environment variables are **required**:
 
-- `JIRA_INTEGRATION_ENABLED` - _(set to `true`)_
 - `JIRA_API_KEY` - _(base64 encoded `<username>:<api_token>`)_
 - `JIRA_BASE_URL`
 - `JIRA_BOT_USER_ID`
