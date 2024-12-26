@@ -14,9 +14,6 @@ inputs:
   github_token:
     description: GitHub token to access the repository. This should automatically be available as a secret.
     required: true
-  jira_integration_enabled:
-    description: Enable Jira integration. Defaults to `false`.
-    required: false
   jira_api_key:
     description: Base64-encoded `<username>:<api_token>` for Jira with read permissions. Required if Jira is enabled.
     required: false
@@ -78,7 +75,6 @@ runs:
         GITHUB_TOKEN: ${{ inputs.github_token }}
         JIRA_API_KEY: ${{ inputs.jira_api_key }}
         JIRA_BASE_URL: ${{ inputs.jira_base_url }}
-        JIRA_INTEGRATION_ENABLED: ${{ inputs.jira_integration_enabled }}
         JIRA_PROJECT_KEY: ${{ inputs.jira_project_key }}
         REPOS_DIR: ./repos
         SLACK_MESSAGE_ENABLED: true

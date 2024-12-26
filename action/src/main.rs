@@ -95,10 +95,9 @@ pub async fn get_jira_issues(
     pull_requests: &[PullRequest],
     commit_messages: &[String],
 ) -> Result<Option<Vec<Issue>>> {
-    let jira_integration =
-        config::get_optional("JIRA_INTEGRATION_ENABLED").is_some_and(|v| v == "true");
+    let jira_enabled = config::get_optional("JIRA_API_KEY").is_some();
 
-    if !jira_integration {
+    if !jira_enabled {
         return Ok(None);
     }
 

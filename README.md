@@ -33,20 +33,16 @@ with:
   # Required.
   github_token: ${{ secrets.GITHUB_TOKEN }}
 
-  # Enable Jira integration.
-  # Default: `false`.
-  jira_integration_enabled: "false"
-
   # Jira username and API key (base64 encoded `<username>:<api_token>`).
-  # Required if Jira is enabled.
+  # Required for Jira integration.
   jira_api_key: ""
 
   # Jira instance base URL (e.g., https://my-company.atlassian.net).
-  # Required if Jira is enabled.
+  # Required if `jira_api_key` is provided.
   jira_base_url: ""
 
   # Jira project key.
-  # Required if Jira is enabled.
+  # Required if `jira_api_key` is provided.
   jira_project_key:
 
   # Slack webhook URL for the release summary.
