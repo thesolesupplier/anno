@@ -15,7 +15,7 @@ The minimum required inputs are:
 The latter should be automatically available as a secret.
 
 ```yaml
-uses: thesolesupplier/anno@v1
+uses: thesolesupplier/anno@v2
 with:
   # App name for the Slack message.
   # Default: Repository name.
