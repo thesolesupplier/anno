@@ -3,7 +3,6 @@ use crate::utils::{config, error::AppError};
 use anyhow::Result;
 use base64::prelude::*;
 use glob::Pattern;
-use regex_lite::Regex;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -252,15 +251,6 @@ impl WorkflowTargetPaths {
         let is_excluded = self.excluded.iter().any(|p| p.matches(path));
 
         is_included && !is_excluded
-    }
-
-    pub fn get_sanitised_included(&self) -> Vec<String> {
-        let special_char_regex = Regex::new(r"[*\[\]?!+]").expect("Valid regex");
-
-        self.included
-            .iter()
-            .map(|p| special_char_regex.replace_all(p.as_str(), "").to_string())
-            .collect()
     }
 }
 

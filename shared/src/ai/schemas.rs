@@ -83,3 +83,35 @@ pub fn test_cases_response() -> Value {
         "json_schema": schema
     })
 }
+
+pub fn pr_review_response() -> Value {
+    let verdict = json!({
+      "type": "string",
+      "enum": [
+        "Positive",
+        "Negative"
+      ],
+      "description": "The verdict which can either be Positive or Negative."
+    });
+
+    let feedback = json!({
+      "type": "string",
+      "description": "A markdown block of text providing feedback."
+    });
+
+    json!({
+      "name": "pr_review",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "verdict": verdict,
+          "feedback": feedback
+        },
+        "required": [
+          "verdict",
+          "feedback"
+        ],
+        "additionalProperties": false
+      },
+    })
+}
