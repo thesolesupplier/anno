@@ -136,14 +136,14 @@ impl PullRequest {
             return Ok(());
         }
 
-        let (lgtms, not_lgtms) = comments.iter().partition::<Vec<_>, _>(|c| c.is_lgtm());
+        let (positives, negatives) = comments.iter().partition::<Vec<_>, _>(|c| c.is_positive());
 
-        if let Some(prev_lgtm) = lgtms.first() {
-            prev_lgtm.delete().await?;
+        if let Some(prev_positive) = positives.first() {
+            prev_positive.delete().await?;
         }
 
-        if let Some(prev_not_lgtm) = not_lgtms.first() {
-            prev_not_lgtm.hide_as_outdated().await?;
+        if let Some(prev_negative) = negatives.first() {
+            prev_negative.hide_as_outdated().await?;
         }
 
         Ok(())
@@ -185,7 +185,7 @@ pub struct Comment {
 }
 
 impl Comment {
-    pub fn is_lgtm(&self) -> bool {
+    pub fn is_positive(&self) -> bool {
         self.is_by_anno() && self.body.contains("LGTM")
     }
 

@@ -1,13 +1,15 @@
-use crate::{ai::prompts, utils::config};
+use crate::{
+    ai::{prompts, schemas},
+    utils::config,
+};
 use anyhow::Result;
-use regex_lite::Regex;
-use serde::Deserialize;
-use serde_json::json;
+use serde::{de::DeserializeOwned, Deserialize};
+use serde_json::{json, Value};
 
 pub struct Claude;
 
 impl Claude {
-    pub async fn get_pr_bug_analysis(diff: &str, commit_messages: &[String]) -> Result<String> {
+    pub async fn get_pr_review(diff: &str, commit_messages: &[String]) -> Result<PrReviewResponse> {
         tracing::info!("Generating PR analysis");
 
         let commit_messages = commit_messages.join("\n");
@@ -17,17 +19,28 @@ impl Claude {
             <CommitMessages>{commit_messages}</CommitMessages>"
         );
 
-        let response = Self::make_request(prompts::PR_BUG_ANALYSIS, user_prompt).await?;
+        let response = Self::make_request(
+            prompts::PR_BUG_ANALYSIS,
+            user_prompt,
+            schemas::pr_review_response(),
+            "pr_review",
+        )
+        .await?;
 
-        Ok(Self::extract_output(response))
+        Ok(response)
     }
 
-    async fn make_request(system_input: &'static str, user_input: String) -> Result<String> {
+    async fn make_request<T: DeserializeOwned>(
+        system_input: &'static str,
+        user_input: String,
+        tool_schema: Value,
+        tool_name: &'static str,
+    ) -> Result<T> {
         let base_url = config::get("CLAUDE_BASE_URL");
         let api_key = config::get("CLAUDE_API_KEY");
         let model = config::get("CLAUDE_MODEL");
 
-        let mut response = reqwest::Client::new()
+        let response = reqwest::Client::new()
             .post(format!("{base_url}/v1/messages"))
             .header("content-type", "application/json")
             .header("anthropic-version", "2023-06-01")
@@ -37,41 +50,50 @@ impl Claude {
                 "max_tokens": 1024,
                 "temperature": 0.0,
                 "system": system_input,
-                "messages": [{ "role": "user", "content": user_input }]
+                "messages": [{ "role": "user", "content": user_input }],
+                "tools": [tool_schema],
+                "tool_choice": { "type": "tool", "name": tool_name }
             }))
             .send()
             .await?
             .error_for_status()
             .inspect_err(|e| tracing::error!("Error making Claude request: {e}"))?
-            .json::<ApiResponse>()
-            .await?;
+            .json::<ApiResponse<T>>()
+            .await?
+            .content
+            .into_iter()
+            .next()
+            .expect("At least one item to be returned")
+            .input;
 
-        let summary = response.content.remove(0).text;
-
-        Ok(summary)
-    }
-
-    fn extract_output(output: String) -> String {
-        let output_regex = Regex::new(r"(?s)<Output>(.*?)<\/Output>").unwrap();
-
-        let Some(matches) = output_regex.captures(&output) else {
-            return output;
-        };
-
-        if matches.len() == 0 {
-            return output;
-        }
-
-        matches.get(1).unwrap().as_str().trim().to_string()
+        Ok(response)
     }
 }
 
 #[derive(Deserialize)]
-pub struct ApiResponse {
-    content: Vec<Content>,
+pub struct PrReviewResponse {
+    pub verdict: Verdict,
+    pub feedback: String,
+}
+
+impl PrReviewResponse {
+    pub fn is_positive(&self) -> bool {
+        matches!(self.verdict, Verdict::Positive)
+    }
+}
+
+#[derive(Deserialize, Debug)]
+pub enum Verdict {
+    Positive,
+    Negative,
 }
 
 #[derive(Deserialize)]
-struct Content {
-    text: String,
+pub struct ApiResponse<T> {
+    pub content: Vec<ContentItem<T>>,
+}
+
+#[derive(Deserialize)]
+pub struct ContentItem<T> {
+    pub input: T,
 }

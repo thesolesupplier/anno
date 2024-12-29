@@ -87,9 +87,9 @@ impl ChatGpt {
             .message
             .content;
 
-        let release_notes: T = serde_json::from_str(&response)?;
+        let parsed_response: T = serde_json::from_str(&response)?;
 
-        Ok(release_notes)
+        Ok(parsed_response)
     }
 }
 
