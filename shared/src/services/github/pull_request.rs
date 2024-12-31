@@ -107,9 +107,7 @@ impl PullRequest {
         let pr_comment_enabled = config::get("PR_COMMENT_ENABLED") == "true";
 
         if !pr_comment_enabled {
-            println!("------ PR COMMENT ------");
             println!("{comment}");
-            println!("------------------------");
             return Ok(());
         }
 

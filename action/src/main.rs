@@ -1,16 +1,18 @@
+mod ai;
+mod git;
+mod slack;
+mod workflows;
+
 use anyhow::Result;
 use futures::future::try_join_all;
+use git::Git;
 use regex_lite::Regex;
 use shared::{
-    ai,
-    services::{
-        github::{PullRequest, WorkflowRun, WorkflowRuns},
-        jira::Issue,
-        slack, Git,
-    },
+    services::{github::PullRequest, jira::Issue},
     utils::{config, error::AppError},
 };
 use std::collections::HashSet;
+use workflows::{WorkflowRun, WorkflowRuns};
 
 #[tokio::main]
 async fn main() -> Result<(), AppError> {
@@ -42,10 +44,11 @@ async fn main() -> Result<(), AppError> {
     let new_commit = &run.head_sha;
     let old_commit = &prev_runs.last_successful.head_sha;
 
-    let diff = run
-        .repository
-        .fetch_diff(old_commit, new_commit, &target_paths)
-        .await?;
+    let mut diff = run.repository.fetch_diff(old_commit, new_commit).await?;
+
+    if let Some(target_paths) = &target_paths {
+        diff = target_paths.filter_diff(&diff);
+    }
 
     let commit_messages = Git::init(&run.repository.full_name)
         .await?
@@ -53,16 +56,17 @@ async fn main() -> Result<(), AppError> {
 
     let pull_requests = get_pull_requests(&run, &prev_runs.prev_runs).await?;
     let jira_issues = get_jira_issues(&pull_requests, &commit_messages).await?;
-    let summary = ai::ChatGpt::get_release_summary(&diff, &commit_messages).await?;
+    let summary = ai::ReleaseSummary::new(&diff, &commit_messages).await?;
 
-    slack::post_release_summary(slack::MessageInput {
+    slack::ReleaseSummary {
         app_name: app_name.as_deref(),
         jira_issues,
         prev_run: &prev_runs.last_successful,
         pull_requests,
         run: &run,
         summary,
-    })
+    }
+    .send()
     .await?;
 
     Ok(())
@@ -94,11 +98,11 @@ async fn get_pull_requests(
 pub async fn get_jira_issues(
     pull_requests: &[PullRequest],
     commit_messages: &[String],
-) -> Result<Option<Vec<Issue>>> {
+) -> Result<Vec<Issue>> {
     let jira_enabled = config::get_optional("JIRA_API_KEY").is_some();
 
     if !jira_enabled {
-        return Ok(None);
+        return Ok(Vec::new());
     }
 
     let project_key = config::get("JIRA_PROJECT_KEY");
@@ -136,5 +140,5 @@ pub async fn get_jira_issues(
 
     issues.sort_by(|a, b| a.key.cmp(&b.key));
 
-    Ok(Some(issues))
+    Ok(issues)
 }

@@ -3,8 +3,6 @@ edition = "2021"
 name = "api"
 version = "0.1.0"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [[bin]]
 name = "api"
 
@@ -12,14 +10,13 @@ name = "api"
 anyhow.workspace = true
 axum-aws-lambda = "0.7.0"
 axum.workspace = true
-chrono.workspace = true
 hex = "0.4.3"
 hmac-sha256 = "1.1.7"
 hyper.workspace = true
 lambda_http = "0.11.1"
 serde.workspace = true
 serde_json.workspace = true
-serde_path_to_error.workspace = true
+serde_path_to_error = "0.1.16"
 shared.workspace = true
 subtle = "2.5.0"
 time.workspace = true
@@ -28,6 +25,7 @@ tower = "0.4.13"
 tower-http = {version = "0.5.2", features = ["cors", "compression-gzip", "compression-deflate", "trace"]}
 tracing-subscriber.workspace = true
 tracing.workspace = true
+uuid = {version = "1.11.0", features = ["v4"]}
 
 [package.metadata.lambda.deploy]
 tags = {"Name" = "anno", "Env" = "prod"}

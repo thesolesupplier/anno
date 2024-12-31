@@ -1,10 +1,9 @@
-use crate::{ai::TestCases, utils::config};
+use crate::utils::config;
 use anyhow::Result;
 use futures::future::try_join_all;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::fmt::Debug;
-use uuid::Uuid;
 
 #[derive(Deserialize)]
 pub struct Issue {
@@ -49,82 +48,20 @@ impl Issue {
         format!("{jira_base_url}/browse/{}", self.key)
     }
 
-    pub async fn add_test_cases(&self, test_cases: TestCases) -> Result<()> {
-        let title = json!({
-            "type": "paragraph",
-            "content": [
-                {
-                    "type": "text",
-                    "text": "Test Cases",
-                    "marks": [{    "type": "strong"}]
-                }
-            ]
-        });
-
-        let test_cases: Vec<_> = test_cases
-            .cases
-            .into_iter()
-            .map(|case| {
-                json!({
-                    "type": "taskItem",
-                    "attrs": {
-                        "state": "TODO",
-                        "localId": Uuid::new_v4().to_string(),
-                    },
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": format!(" {}", case)
-                        }
-                    ]
-                })
-            })
-            .collect();
-
-        let content = json!([
-          {
-            "type": "panel",
-            "attrs": {
-              "panelType": "success"
-            },
-            "content": [title]
-          },
-          {
-            "type": "taskList",
-            "attrs": {
-              "localId": Uuid::new_v4().to_string()
-            },
-            "content": test_cases
-          }
-        ]);
-
-        let comment = json!({
-          "version": 1,
-          "type": "doc",
-          "content": content
-        });
-
-        self.add_comment(comment).await
-    }
-
-    async fn add_comment<T: Serialize + Debug>(&self, comment: T) -> Result<()> {
+    pub async fn add_comment<T: Serialize + Debug>(&self, comment: T) -> Result<()> {
         let jira_enabled = config::get_optional("JIRA_API_KEY").is_some();
 
         if !jira_enabled {
-            println!("------ JIRA COMMENT ------");
             println!("{comment:#?}");
-            println!("--------------------------");
             return Ok(());
         }
 
         let jira_base_url = config::get("JIRA_BASE_URL");
         let jira_api_key = config::get("JIRA_API_KEY");
+        let url = format!("{jira_base_url}/rest/api/3/issue/{}/comment", self.id);
 
         reqwest::Client::new()
-            .post(format!(
-                "{jira_base_url}/rest/api/3/issue/{}/comment",
-                self.id
-            ))
+            .post(url)
             .header("Accept", "application/json")
             .header("Content-Type", "application/json")
             .header("Authorization", format!("Basic {jira_api_key}"))
@@ -148,7 +85,7 @@ impl Issue {
         Ok(user_comments)
     }
 
-    pub async fn delete_outdated_comments(&self) -> Result<()> {
+    pub async fn delete_anno_comments(&self) -> Result<()> {
         let jira_enabled = config::get_optional("JIRA_API_KEY").is_some();
 
         if !jira_enabled {

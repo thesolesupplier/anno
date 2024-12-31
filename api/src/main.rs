@@ -1,3 +1,4 @@
+mod ai;
 mod middleware;
 mod routes;
 
