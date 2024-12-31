@@ -58,7 +58,7 @@ jobs:
     # ...deployment steps
 
   anno:
-    uses: thesolesupplier/anno@v1
+    uses: thesolesupplier/anno@v2
     needs:
       - prod-deploy
       # Add other job names here if needed

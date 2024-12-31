@@ -248,7 +248,7 @@ impl WorkflowTargetPaths {
                         let path = caps[1].to_string();
 
                         let is_ignored_file = IGNORED_REPO_PATHS.iter().any(|p| path.contains(p));
-                        let is_non_target_file = self.is_included(&path);
+                        let is_non_target_file = !self.is_included(&path);
 
                         is_inside_ignored_file = is_ignored_file || is_non_target_file;
                     }
