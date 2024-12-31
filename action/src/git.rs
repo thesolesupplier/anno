@@ -1,7 +1,7 @@
-use super::github::WorkflowTargetPaths;
-use crate::{services::github::AccessToken, utils::config};
+use super::workflows::WorkflowTargetPaths;
 use anyhow::Result;
-use git2::{Commit, ObjectType, Oid, TreeEntry, TreeWalkMode, TreeWalkResult};
+use git2::{Commit, Oid};
+use shared::{services::github::AccessToken, utils::config};
 use std::str;
 
 pub struct Git {
@@ -49,38 +49,6 @@ impl Git {
         fetch_options.remote_callbacks(callbacks);
 
         fetch_options
-    }
-
-    pub fn get_contents(&self) -> Result<Vec<String>> {
-        let read_entry_contents = |entry: &TreeEntry| -> Result<String> {
-            let object_id = entry.to_object(&self.repo)?.id();
-            let blob = self.repo.find_blob(object_id)?;
-            let contents = str::from_utf8(blob.content())?.to_string();
-
-            Ok(contents)
-        };
-
-        let mut contents: Vec<String> = Vec::new();
-
-        self.repo
-            .head()?
-            .peel_to_commit()?
-            .tree()?
-            .walk(TreeWalkMode::PreOrder, |_, entry| {
-                if entry.kind() != Some(ObjectType::Blob) {
-                    return TreeWalkResult::Ok;
-                }
-
-                let Ok(content) = read_entry_contents(entry) else {
-                    return TreeWalkResult::Ok;
-                };
-
-                contents.push(content);
-
-                TreeWalkResult::Ok
-            })?;
-
-        Ok(contents)
     }
 
     pub fn get_commit_messages(

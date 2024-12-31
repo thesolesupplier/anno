@@ -7,9 +7,15 @@ name = "action"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "dotenv",
+ "base64 0.22.1",
  "futures",
+ "git2",
+ "glob",
  "regex-lite",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "serde_yaml",
  "shared",
  "tokio",
  "tracing",
@@ -68,7 +74,6 @@ dependencies = [
  "anyhow",
  "axum",
  "axum-aws-lambda",
- "chrono",
  "hex",
  "hmac-sha256",
  "hyper",
@@ -84,6 +89,7 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
+ "uuid",
 ]
 
 [[package]]
@@ -558,9 +564,9 @@ dependencies = [
 
 [[package]]
 name = "glob"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
+checksum = "a8d1add55171497b4705a648c6b583acafb01d58050a51727785f0b2c8e0a2b2"
 
 [[package]]
 name = "h2"
@@ -1675,21 +1681,15 @@ dependencies = [
  "chrono",
  "dotenv",
  "futures",
- "git2",
- "glob",
  "hex",
  "hyper",
  "jsonwebtoken",
  "openssl",
- "regex-lite",
  "reqwest",
  "serde",
  "serde_json",
- "serde_path_to_error",
- "serde_yaml",
  "tokio",
  "tracing",
- "uuid",
 ]
 
 [[package]]

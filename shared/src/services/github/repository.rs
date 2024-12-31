@@ -1,6 +1,5 @@
-use super::{pull_request::PullRequest, workflow::WorkflowTargetPaths, AccessToken};
+use super::{pull_request::PullRequest, AccessToken};
 use anyhow::Result;
-use regex_lite::Regex;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -12,18 +11,6 @@ pub struct Repository {
     contents_url: String,
     commits_url: String,
 }
-
-const IGNORED_REPO_PATHS: [&str; 9] = [
-    ".github",
-    "build",
-    "Cargo.lock",
-    "coverage",
-    "dist",
-    "target",
-    "node_modules",
-    "package-lock.json",
-    "yarn.lock",
-];
 
 impl Repository {
     pub fn get_compare_url(&self, old_sha: &str, new_sha: &str) -> String {
@@ -107,12 +94,7 @@ impl Repository {
         Ok(response)
     }
 
-    pub async fn fetch_diff(
-        &self,
-        old_sha: &str,
-        new_sha: &str,
-        target_paths: &Option<WorkflowTargetPaths>,
-    ) -> Result<String> {
+    pub async fn fetch_diff(&self, old_sha: &str, new_sha: &str) -> Result<String> {
         tracing::info!("Fetching diff between {old_sha} and {new_sha}");
 
         let gh_token = AccessToken::get().await?;
@@ -132,38 +114,7 @@ impl Repository {
             .text()
             .await?;
 
-        let filtered_diff = self.filter_diff_by_paths(&diff, target_paths);
-
-        Ok(filtered_diff)
-    }
-
-    fn filter_diff_by_paths(
-        &self,
-        diff: &str,
-        target_paths: &Option<WorkflowTargetPaths>,
-    ) -> String {
-        let re = Regex::new(r"b/([^ ]+)").unwrap();
-        let mut is_inside_ignored_file = false;
-
-        diff.lines()
-            .filter(|line| {
-                if line.starts_with("diff --git") {
-                    if let Some(caps) = re.captures(line) {
-                        let path = caps[1].to_string();
-
-                        let is_ignored_file = IGNORED_REPO_PATHS.iter().any(|p| path.contains(p));
-                        let is_non_target_file = target_paths
-                            .as_ref()
-                            .map_or(false, |targets| !targets.is_included(&path));
-
-                        is_inside_ignored_file = is_ignored_file || is_non_target_file;
-                    }
-                }
-
-                !is_inside_ignored_file
-            })
-            .collect::<Vec<_>>()
-            .join("\n")
+        Ok(diff)
     }
 }
 

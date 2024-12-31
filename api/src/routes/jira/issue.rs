@@ -1,7 +1,7 @@
-use crate::middleware::validation::JiraEvent;
+use crate::{ai, middleware::validation::JiraEvent};
 use hyper::StatusCode;
 use serde::Deserialize;
-use shared::{ai, services::jira::Issue, utils::error::AppError};
+use shared::{services::jira::Issue, utils::error::AppError};
 
 pub async fn status(JiraEvent(event): JiraEvent<JiraIssueEvent>) -> Result<StatusCode, AppError> {
     if !event.should_trigger_test_cases() {
@@ -18,10 +18,12 @@ pub async fn status(JiraEvent(event): JiraEvent<JiraIssueEvent>) -> Result<Statu
 
     let issue_comments = event.issue.get_user_comments().await?;
 
-    let test_cases = ai::ChatGpt::get_test_cases(issue_description, &issue_comments).await?;
+    let test_cases = ai::TestCases::new(issue_description, &issue_comments)
+        .await?
+        .into_jira_comment_body();
 
-    event.issue.delete_outdated_comments().await?;
-    event.issue.add_test_cases(test_cases).await?;
+    event.issue.delete_anno_comments().await?;
+    event.issue.add_comment(test_cases).await?;
 
     Ok(StatusCode::OK)
 }

@@ -1,9 +1,12 @@
-use super::{repository::Repository, AccessToken, IGNORED_REPO_PATHS};
-use crate::utils::{config, error::AppError};
 use anyhow::Result;
 use base64::prelude::*;
 use glob::Pattern;
+use regex_lite::Regex;
 use serde::Deserialize;
+use shared::{
+    services::github::{repository::Repository, AccessToken, IGNORED_REPO_PATHS},
+    utils::{config, error::AppError},
+};
 
 #[derive(Deserialize)]
 pub struct WorkflowRuns {
@@ -81,11 +84,9 @@ pub struct PrevRuns {
 
 #[derive(Deserialize)]
 pub struct WorkflowRun {
-    pub name: String,
     pub head_sha: String,
     pub repository: Repository,
     pub actor: WorkflowRunActor,
-    pub head_commit: WorkflowRunCommit,
     pub event: String,
     path: String,
     created_at: String,
@@ -122,16 +123,6 @@ impl WorkflowRun {
 
     pub async fn has_successful_attempt(&self) -> Result<bool, AppError> {
         Ok(self.is_successful_attempt() || self.get_prev_successful_attempt().await?.is_some())
-    }
-
-    pub async fn is_first_successful_attempt(&self) -> Result<bool, AppError> {
-        if !self.is_successful_attempt() {
-            return Ok(false);
-        }
-
-        let is_first_successful_attempt = !self.has_prev_successful_attempt().await?;
-
-        Ok(is_first_successful_attempt)
     }
 
     pub async fn has_prev_successful_attempt(&self) -> Result<bool, AppError> {
@@ -246,6 +237,29 @@ impl WorkflowTargetPaths {
         })
     }
 
+    pub fn filter_diff(&self, diff: &str) -> String {
+        let re = Regex::new(r"b/([^ ]+)").unwrap();
+
+        let mut is_inside_ignored_file = false;
+        diff.lines()
+            .filter(|line| {
+                if line.starts_with("diff --git") {
+                    if let Some(caps) = re.captures(line) {
+                        let path = caps[1].to_string();
+
+                        let is_ignored_file = IGNORED_REPO_PATHS.iter().any(|p| path.contains(p));
+                        let is_non_target_file = self.is_included(&path);
+
+                        is_inside_ignored_file = is_ignored_file || is_non_target_file;
+                    }
+                }
+
+                !is_inside_ignored_file
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
     pub fn is_included(&self, path: &str) -> bool {
         let is_included = self.included.is_empty() || self.included.iter().any(|p| p.matches(path));
         let is_excluded = self.excluded.iter().any(|p| p.matches(path));
@@ -270,9 +284,4 @@ struct WorkflowOnPushConfig {
 pub struct WorkflowRunActor {
     pub login: String,
     pub avatar_url: String,
-}
-
-#[derive(Deserialize)]
-pub struct WorkflowRunCommit {
-    pub timestamp: String,
 }

@@ -1,12 +1,10 @@
-use super::{
-    github::{PullRequest, WorkflowRun},
-    jira::Issue,
-};
-use crate::{
-    ai::ReleaseNotes,
+use super::workflows::WorkflowRun;
+use crate::ai::ReleaseSummary;
+use serde_json::{json, Value};
+use shared::{
+    services::{github::PullRequest, jira::Issue},
     utils::{config, error::AppError},
 };
-use serde_json::{json, Value};
 
 pub struct MessageInput<'a> {
     pub app_name: Option<&'a str>,
@@ -14,7 +12,7 @@ pub struct MessageInput<'a> {
     pub pull_requests: Vec<PullRequest>,
     pub prev_run: &'a WorkflowRun,
     pub run: &'a WorkflowRun,
-    pub summary: ReleaseNotes,
+    pub summary: ReleaseSummary,
 }
 
 pub async fn post_release_summary(
@@ -30,9 +28,7 @@ pub async fn post_release_summary(
     let send_slack_msg = config::get("SLACK_MESSAGE_ENABLED") == "true";
 
     if !send_slack_msg {
-        println!("------ SLACK MESSAGE ------");
         println!("{summary:#?}");
-        println!("---- END SLACK MESSAGE ----");
         return Ok(());
     }
 
@@ -95,7 +91,7 @@ fn get_header_block(app_name: Option<&str>, run: &WorkflowRun) -> serde_json::Va
     })
 }
 
-fn get_summary_block(release_notes: &ReleaseNotes) -> Vec<Value> {
+fn get_summary_block(release_notes: &ReleaseSummary) -> Vec<Value> {
     let mut blocks = Vec::new();
 
     for category in &release_notes.items {
@@ -138,7 +134,7 @@ fn get_pull_requests_block(pull_requests: Vec<PullRequest>) -> serde_json::Value
                 "type": "rich_text_list",
                 "style": "bullet",
                 "elements": pull_requests
-                .iter()
+                .into_iter()
                 .map(|pr| {
                     json!({
                         "type": "rich_text_section",
@@ -177,7 +173,7 @@ fn get_jira_tickets_block(jira_issues: Vec<Issue>) -> serde_json::Value {
                 "type": "rich_text_list",
                 "style": "bullet",
                 "elements": jira_issues
-                .iter()
+                .into_iter()
                 .map(|issue| {
                     json!({
                         "type": "rich_text_section",

@@ -1,8 +1,7 @@
-use crate::middleware::validation::GithubEvent;
+use crate::{ai, middleware::validation::GithubEvent};
 use hyper::StatusCode;
 use serde::Deserialize;
 use shared::{
-    ai,
     services::github::{PullRequest, Repository},
     utils::error::AppError,
 };
@@ -28,7 +27,7 @@ pub async fn bug_analysis(
 
     let diff = pr.get_diff().await?;
     let commit_messages = pr.get_commit_messages().await?;
-    let review = ai::Claude::get_pr_review(&diff, &commit_messages).await?;
+    let review = ai::PrReview::new(&diff, &commit_messages).await?;
 
     if action == "opened" {
         pr.add_comment(&review.feedback).await?;
