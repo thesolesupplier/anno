@@ -1,254 +1,226 @@
 use super::workflows::WorkflowRun;
-use crate::ai::ReleaseSummary;
+use crate::ai;
 use serde_json::{json, Value};
 use shared::{
     services::{github::PullRequest, jira::Issue},
     utils::{config, error::AppError},
 };
 
-pub struct MessageInput<'a> {
+pub struct ReleaseSummary<'a> {
     pub app_name: Option<&'a str>,
-    pub jira_issues: Option<Vec<Issue>>,
-    pub pull_requests: Vec<PullRequest>,
+    pub jira_issues: Vec<Issue>,
     pub prev_run: &'a WorkflowRun,
+    pub pull_requests: Vec<PullRequest>,
     pub run: &'a WorkflowRun,
-    pub summary: ReleaseSummary,
+    pub summary: ai::ReleaseSummary,
 }
 
-pub async fn post_release_summary(
-    MessageInput {
-        app_name,
-        jira_issues,
-        prev_run,
-        pull_requests,
-        run: workflow_run,
-        summary,
-    }: MessageInput<'_>,
-) -> Result<(), AppError> {
-    let send_slack_msg = config::get("SLACK_MESSAGE_ENABLED") == "true";
+impl ReleaseSummary<'_> {
+    pub async fn send(&self) -> Result<(), AppError> {
+        let send_slack_msg = config::get("SLACK_MESSAGE_ENABLED") == "true";
 
-    if !send_slack_msg {
-        println!("{summary:#?}");
-        return Ok(());
-    }
+        if !send_slack_msg {
+            println!("{:#?}", self.summary);
+            return Ok(());
+        }
 
-    tracing::info!("Posting release summary to Slack");
+        tracing::info!("Posting release summary to Slack");
 
-    let webhook_url = config::get("SLACK_WEBHOOK_URL");
+        let mut message_blocks = Vec::from([self.get_header_block(), json!({ "type": "divider" })]);
 
-    let mut message_blocks: Vec<serde_json::Value> =
-        Vec::from([get_header_block(app_name, workflow_run)]);
+        message_blocks.extend(self.get_summary_block());
 
-    if !summary.items.is_empty() {
+        if !self.jira_issues.is_empty() || !self.pull_requests.is_empty() {
+            message_blocks.push(json!({ "type": "divider" }));
+        }
+
+        if !self.pull_requests.is_empty() {
+            message_blocks.push(self.get_pull_requests_block());
+        }
+
+        if !self.jira_issues.is_empty() {
+            message_blocks.push(self.get_jira_tickets_block());
+        }
+
+        message_blocks.push(self.get_actions_block());
         message_blocks.push(json!({ "type": "divider" }));
+        message_blocks.push(self.get_deployed_by_block());
 
-        for block in get_summary_block(&summary) {
-            message_blocks.push(block);
-        }
+        reqwest::Client::new()
+            .put(config::get("SLACK_WEBHOOK_URL"))
+            .json(&json!({"blocks": json!(message_blocks)}))
+            .send()
+            .await?
+            .error_for_status()
+            .inspect_err(|e| tracing::error!("Error posting Slack message: {e}"))?;
+
+        Ok(())
     }
 
-    if !jira_issues.as_ref().map_or(false, |i| !i.is_empty()) || !pull_requests.is_empty() {
-        message_blocks.push(json!({ "type": "divider" }));
-    }
+    fn get_header_block(&self) -> Value {
+        let app_name = self.app_name.unwrap_or(&self.run.repository.name);
 
-    if !pull_requests.is_empty() {
-        message_blocks.push(get_pull_requests_block(pull_requests));
-    }
-
-    if let Some(jira_issues) = jira_issues {
-        if !jira_issues.is_empty() {
-            message_blocks.push(get_jira_tickets_block(jira_issues));
-        }
-    }
-
-    message_blocks.push(get_actions_block(workflow_run, prev_run));
-    message_blocks.push(json!({ "type": "divider" }));
-    message_blocks.push(get_deployed_by_block(workflow_run));
-
-    reqwest::Client::new()
-        .put(webhook_url)
-        .json(&json!({"blocks": json!(message_blocks)}))
-        .send()
-        .await?
-        .error_for_status()
-        .inspect_err(|e| tracing::error!("Error posting Slack message: {e}"))?;
-
-    Ok(())
-}
-
-fn get_header_block(app_name: Option<&str>, run: &WorkflowRun) -> serde_json::Value {
-    let app_name = app_name
-        .map(|a| a.to_string())
-        .unwrap_or_else(|| uppercase_first_letter(&run.repository.name));
-
-    json!({
-        "type": "header",
-        "text": {
-            "type": "plain_text",
-            "text": format!("{app_name} release :rocket:",),
-            "emoji": true
-        }
-    })
-}
-
-fn get_summary_block(release_notes: &ReleaseSummary) -> Vec<Value> {
-    let mut blocks = Vec::new();
-
-    for category in &release_notes.items {
-        let items = category
-            .items
-            .iter()
-            .map(|note| format!(r"  •  {note}"))
-            .collect::<Vec<_>>()
-            .join("\n");
-
-        blocks.push(json!({
-            "type": "section",
+        json!({
+            "type": "header",
             "text": {
-                "type": "mrkdwn",
-                "text": format!("*{}:*\n{items}", category.title),
+                "type": "plain_text",
+                "text": format!("{app_name} release :rocket:"),
+                "emoji": true
             }
-        }));
+        })
     }
 
-    blocks
-}
+    fn get_summary_block(&self) -> Vec<Value> {
+        let mut blocks = Vec::new();
 
-fn get_pull_requests_block(pull_requests: Vec<PullRequest>) -> serde_json::Value {
-    json!({
-        "type": "rich_text",
-        "elements": [
-            {
-                "type": "rich_text_section",
-                "elements": [
-                    {
-                        "type": "text",
-                        "text": "Pull requests:",
-                        "style": {
-                            "bold": true
-                        }
-                    }
-                ]
-            },
-            {
-                "type": "rich_text_list",
-                "style": "bullet",
-                "elements": pull_requests
-                .into_iter()
-                .map(|pr| {
-                    json!({
-                        "type": "rich_text_section",
-                        "elements": [
-                            {
-                                "type": "link",
-                                "text": format!("#{} {}", pr.number, pr.title),
-                                "url": pr.html_url,
-                            }
-                        ]
-                    })
-                })
+        for category in &self.summary.items {
+            let items = category
+                .items
+                .iter()
+                .map(|note| format!(r"  •  {note}"))
                 .collect::<Vec<_>>()
-            }
-        ]
-    })
-}
+                .join("\n");
 
-fn get_jira_tickets_block(jira_issues: Vec<Issue>) -> serde_json::Value {
-    json!({
-        "type": "rich_text",
-        "elements": [
-            {
-                "type": "rich_text_section",
-                "elements": [
-                    {
-                        "type": "text",
-                        "text": "Jira tickets:",
-                        "style": {
-                            "bold": true
-                        }
-                    }
-                ]
-            },
-            {
-                "type": "rich_text_list",
-                "style": "bullet",
-                "elements": jira_issues
-                .into_iter()
-                .map(|issue| {
-                    json!({
-                        "type": "rich_text_section",
-                        "elements": [
-                            {
-                                "type": "link",
-                                "text": format!("{} {}", issue.key, issue.fields.summary),
-                                "url": issue.get_browse_url(),
+            blocks.push(json!({
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": format!("*{}:*\n{items}", category.title),
+                }
+            }));
+        }
+
+        blocks
+    }
+
+    fn get_pull_requests_block(&self) -> Value {
+        json!({
+            "type": "rich_text",
+            "elements": [
+                {
+                    "type": "rich_text_section",
+                    "elements": [
+                        {
+                            "type": "text",
+                            "text": "Pull requests:",
+                            "style": {
+                                "bold": true
                             }
-                        ]
+                        }
+                    ]
+                },
+                {
+                    "type": "rich_text_list",
+                    "style": "bullet",
+                    "elements": self.pull_requests
+                    .iter()
+                    .map(|pr| {
+                        json!({
+                            "type": "rich_text_section",
+                            "elements": [
+                                {
+                                    "type": "link",
+                                    "text": format!("#{} {}", pr.number, pr.title),
+                                    "url": pr.html_url,
+                                }
+                            ]
+                        })
                     })
-                })
-                .collect::<Vec<_>>()
-            }
-        ]
-    })
-}
+                    .collect::<Vec<_>>()
+                }
+            ]
+        })
+    }
 
-fn get_actions_block(run: &WorkflowRun, prev_run: &WorkflowRun) -> serde_json::Value {
-    json!({
-        "type": "actions",
-        "elements": [
-            {
-                "type": "button",
-                "text": {
-                    "type": "plain_text",
-                    "text": "Deployment",
+    fn get_jira_tickets_block(&self) -> Value {
+        json!({
+            "type": "rich_text",
+            "elements": [
+                {
+                    "type": "rich_text_section",
+                    "elements": [
+                        {
+                            "type": "text",
+                            "text": "Jira tickets:",
+                            "style": {
+                                "bold": true
+                            }
+                        }
+                    ]
                 },
-                "url": run.get_run_url()
-            },
-            {
-                "type": "button",
-                "text": {
-                    "type": "plain_text",
-                    "text": "Diff",
-                },
-                "url": run.repository.get_compare_url(&prev_run.head_sha, &run.head_sha)
-            },
-            {
-                "type": "button",
-                "text": {
-                    "type": "plain_text",
-                    "text": "Rollback",
-                },
-                "url": prev_run.get_run_url()
-            }
-        ]
-    })
-}
+                {
+                    "type": "rich_text_list",
+                    "style": "bullet",
+                    "elements": self.jira_issues
+                    .iter()
+                    .map(|issue| {
+                        json!({
+                            "type": "rich_text_section",
+                            "elements": [
+                                {
+                                    "type": "link",
+                                    "text": format!("{} {}", issue.key, issue.fields.summary),
+                                    "url": issue.get_browse_url(),
+                                }
+                            ]
+                        })
+                    })
+                    .collect::<Vec<_>>()
+                }
+            ]
+        })
+    }
 
-fn get_deployed_by_block(run: &WorkflowRun) -> serde_json::Value {
-    json!({
-        "type": "context",
-        "elements": [
-            {
-                "type": "mrkdwn",
-                "text": format!("*Deployed by:*")
-            },
-            {
-                "type": "image",
-                "image_url": run.actor.avatar_url,
-                "alt_text": run.actor.login
-            },
-            {
-                "type": "mrkdwn",
-                "text": run.actor.login
-            },
-        ]
-    })
-}
+    fn get_actions_block(&self) -> Value {
+        json!({
+            "type": "actions",
+            "elements": [
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Deployment",
+                    },
+                    "url": self.run.get_run_url()
+                },
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Diff",
+                    },
+                    "url": self.run.repository.get_compare_url(&self.prev_run.head_sha, &self.run.head_sha)
+                },
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Rollback",
+                    },
+                    "url": self.prev_run.get_run_url()
+                }
+            ]
+        })
+    }
 
-fn uppercase_first_letter(s: &str) -> String {
-    let mut c = s.chars();
-    match c.next() {
-        None => String::new(),
-        Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+    fn get_deployed_by_block(&self) -> Value {
+        json!({
+            "type": "context",
+            "elements": [
+                {
+                    "type": "mrkdwn",
+                    "text": format!("*Deployed by:*")
+                },
+                {
+                    "type": "image",
+                    "image_url": self.run.actor.avatar_url,
+                    "alt_text": self.run.actor.login
+                },
+                {
+                    "type": "mrkdwn",
+                    "text": self.run.actor.login
+                },
+            ]
+        })
     }
 }

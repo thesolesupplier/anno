@@ -19,7 +19,14 @@ impl ReleaseSummary {
              <CommitMessages>{commit_messages}</CommitMessages>"
         );
 
-        chat_gpt::make_request(PROMPT, user_prompt, response_schema()).await
+        chat_gpt::Request {
+            user_prompt,
+            system_prompt: SYSTEM_PROMPT,
+            response_schema: response_schema(),
+            ..Default::default()
+        }
+        .send()
+        .await
     }
 }
 
@@ -83,7 +90,7 @@ fn response_schema() -> Value {
     })
 }
 
-const PROMPT: &str = "
+const SYSTEM_PROMPT: &str = "
     <Instructions>
         Your role is to analyze a git code diff and related commit messages to identify and summarize the features that have been released.
         Avoid describing each individual code change. Instead, focus on understanding the broader context of the changes and what features they translate into.

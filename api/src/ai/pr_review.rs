@@ -20,7 +20,15 @@ impl PrReview {
              <CommitMessages>{commit_messages}</CommitMessages>"
         );
 
-        claude::make_request(PROMPT, user_prompt, response_schema(), "pr_review").await
+        claude::Request {
+            user_prompt,
+            system_prompt: SYSTEM_PROMPT,
+            tool_schema: response_schema(),
+            tool_name: "pr_review",
+            ..Default::default()
+        }
+        .send()
+        .await
     }
 
     pub fn is_positive(&self) -> bool {
@@ -66,7 +74,7 @@ fn response_schema() -> Value {
     })
 }
 
-const PROMPT: &str = "
+const SYSTEM_PROMPT: &str = "
     <Instructions>
         Your role is to analyse the code diff and commit messages of pull requests to identify bugs.
         Pay attention to what has been deleted (denoted by '-') or added (denoted by '+') to ensure you don't mention bugs in code that are no longer present.

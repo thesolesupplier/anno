@@ -22,7 +22,14 @@ impl TestCases {
              <IssueComments>{comments}</IssueComments>"
         );
 
-        chat_gpt::make_request(PROMPT, user_prompt, response_schema()).await
+        chat_gpt::Request {
+            user_prompt,
+            system_prompt: SYSTEM_PROMPT,
+            response_schema: response_schema(),
+            ..Default::default()
+        }
+        .send()
+        .await
     }
 
     pub fn into_jira_comment_body(self) -> Value {
@@ -112,7 +119,7 @@ fn response_schema() -> Value {
     })
 }
 
-const PROMPT: &str = "
+const SYSTEM_PROMPT: &str = "
     <Instructions>
         Your role is to create test cases in very basic markdown based on the description and comments of a Jira issue.
         Consider user comments as additional information to help identify all scenarios and edge cases.

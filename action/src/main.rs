@@ -58,14 +58,15 @@ async fn main() -> Result<(), AppError> {
     let jira_issues = get_jira_issues(&pull_requests, &commit_messages).await?;
     let summary = ai::ReleaseSummary::new(&diff, &commit_messages).await?;
 
-    slack::post_release_summary(slack::MessageInput {
+    slack::ReleaseSummary {
         app_name: app_name.as_deref(),
         jira_issues,
         prev_run: &prev_runs.last_successful,
         pull_requests,
         run: &run,
         summary,
-    })
+    }
+    .send()
     .await?;
 
     Ok(())
@@ -97,11 +98,11 @@ async fn get_pull_requests(
 pub async fn get_jira_issues(
     pull_requests: &[PullRequest],
     commit_messages: &[String],
-) -> Result<Option<Vec<Issue>>> {
+) -> Result<Vec<Issue>> {
     let jira_enabled = config::get_optional("JIRA_API_KEY").is_some();
 
     if !jira_enabled {
-        return Ok(None);
+        return Ok(Vec::new());
     }
 
     let project_key = config::get("JIRA_PROJECT_KEY");
@@ -139,5 +140,5 @@ pub async fn get_jira_issues(
 
     issues.sort_by(|a, b| a.key.cmp(&b.key));
 
-    Ok(Some(issues))
+    Ok(issues)
 }
