@@ -38,14 +38,14 @@ async fn main() {
             "/github",
             Router::new().route(
                 "/pull-request/bugs",
-                post(routes::github::pull_request::bug_analysis),
+                post(routes::github::pull_request::review),
             ),
         )
         .layer(cors_layer)
         .layer(TraceLayer::new_for_http())
         .layer(CompressionLayer::new().gzip(true).deflate(true));
 
-    // If compiled in debug mode, run the app as a regular Axum server.
+    // If compiled in debug mode, run app as a regular Axum server.
     #[cfg(debug_assertions)]
     {
         let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
@@ -53,7 +53,7 @@ async fn main() {
         axum::serve(listener, app).await.unwrap();
     }
 
-    // If compiled in release mode, run the app using the Lambda runtime.
+    // If compiled in release mode, run app using the Lambda runtime.
     #[cfg(not(debug_assertions))]
     {
         let app = tower::ServiceBuilder::new()

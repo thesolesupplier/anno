@@ -2,7 +2,6 @@ use super::workflows::WorkflowTargetPaths;
 use anyhow::Result;
 use git2::{Commit, Oid};
 use shared::{services::github::AccessToken, utils::config};
-use std::str;
 
 pub struct Git {
     repo: git2::Repository,
