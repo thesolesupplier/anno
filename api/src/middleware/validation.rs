@@ -1,5 +1,4 @@
 use axum::{
-    async_trait,
     body::Bytes,
     extract::{FromRequest, Request},
     http::HeaderValue,
@@ -12,7 +11,6 @@ use subtle::ConstantTimeEq;
 
 pub struct GithubEvent<T>(pub T);
 
-#[async_trait]
 impl<T, S> FromRequest<S> for GithubEvent<T>
 where
     S: Send + Sync,
@@ -42,7 +40,6 @@ where
 
 pub struct JiraEvent<T>(pub T);
 
-#[async_trait]
 impl<T, S> FromRequest<S> for JiraEvent<T>
 where
     S: Send + Sync,

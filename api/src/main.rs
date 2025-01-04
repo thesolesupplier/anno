@@ -33,7 +33,10 @@ async fn main() {
         .allow_origin(tower_http::cors::Any);
 
     let app = Router::new()
-        .route("/jira/issue/:key/status", post(routes::jira::issue::status))
+        .route(
+            "/jira/issue/{key}/status",
+            post(routes::jira::issue::status),
+        )
         .nest(
             "/github",
             Router::new().route(

@@ -21,7 +21,7 @@ impl Repository {
     }
 
     pub async fn get_pull_requests_for_commit(&self, sha: &str) -> Result<Vec<PullRequest>> {
-        tracing::info!("Fetching associated pull requests for {sha}");
+        tracing::info!("Fetching associated pull requests for commit {sha}");
 
         let gh_token = AccessToken::get().await?;
         let url = self.commits_url.replace("{/sha}", &format!("/{sha}/pulls"));
@@ -95,7 +95,7 @@ impl Repository {
     }
 
     pub async fn fetch_diff(&self, old_sha: &str, new_sha: &str) -> Result<String> {
-        tracing::info!("Fetching diff between {old_sha} and {new_sha}");
+        tracing::info!("Fetching diff between commits {old_sha} and {new_sha}");
 
         let gh_token = AccessToken::get().await?;
         let url = self
