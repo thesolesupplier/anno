@@ -19,6 +19,25 @@ pub struct PullRequest {
 }
 
 impl PullRequest {
+    pub async fn set_body(&self, body: String) -> Result<()> {
+        tracing::info!("Setting pull request #{} body", &self.number);
+
+        let gh_token = AccessToken::get().await?;
+
+        reqwest::Client::new()
+            .patch(&self.url)
+            .bearer_auth(gh_token)
+            .header("Accept", "application/json")
+            .header("User-Agent", "Anno")
+            .json(&json!({ "body": body }))
+            .send()
+            .await?
+            .error_for_status()
+            .inspect_err(|e| tracing::error!("Error setting PR body: {e}"))?;
+
+        Ok(())
+    }
+
     pub async fn get_diff(&self) -> Result<String> {
         tracing::info!("Fetching pull request #{} diff", &self.number);
 
