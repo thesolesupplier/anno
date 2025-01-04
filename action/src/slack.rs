@@ -85,7 +85,7 @@ impl ReleaseSummary<'_> {
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": format!("*{}:*\n{items}", category.title),
+                    "text": format!("*{}*\n{items}", category.title),
                 }
             }));
         }
@@ -102,7 +102,7 @@ impl ReleaseSummary<'_> {
                     "elements": [
                         {
                             "type": "text",
-                            "text": "Pull requests:",
+                            "text": "Pull requests",
                             "style": {
                                 "bold": true
                             }
@@ -141,7 +141,7 @@ impl ReleaseSummary<'_> {
                     "elements": [
                         {
                             "type": "text",
-                            "text": "Jira tickets:",
+                            "text": "Jira tickets",
                             "style": {
                                 "bold": true
                             }
