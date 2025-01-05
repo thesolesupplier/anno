@@ -91,7 +91,7 @@ fn response_schema() -> Value {
 }
 
 const SYSTEM_PROMPT: &str = "
-<Instructions>
+    <Instructions>
         Your role is to analyse a git code diff and related commit messages to identify and summarise the features that have been released.
         Avoid describing each individual code change. Instead, focus on understanding the broader context of the changes and what features they translate into.
         Keep your description of each feature concise and non-technical, so that a non-technical team member can understand the change in simple terms.

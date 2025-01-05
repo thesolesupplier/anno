@@ -16,22 +16,19 @@ impl Git {
         let repo_url = format!("https://x-access-token:{gh_token}@github.com/{full_name}");
         let repo_disk_path = format!("{repos_dir}/{}", repo_name.replace('-', "_"));
 
-        let repo = match git2::Repository::open(&repo_disk_path) {
-            Ok(repo) => {
-                tracing::info!("{full_name} repository already cloned, pulling latest changes");
+        let repo = if let Ok(repo) = git2::Repository::open(&repo_disk_path) {
+            tracing::info!("{full_name} repository already cloned, pulling latest changes");
 
-                repo.find_remote("origin")?.fetch(
-                    &["master"],
-                    Some(&mut Self::get_fetch_options(gh_token)),
-                    None,
-                )?;
+            repo.find_remote("origin")?.fetch(
+                &["master"],
+                Some(&mut Self::get_fetch_options(gh_token)),
+                None,
+            )?;
 
-                repo
-            }
-            Err(_) => {
-                tracing::info!("Cloning {full_name} repository");
-                git2::Repository::clone(&repo_url, &repo_disk_path)?
-            }
+            repo
+        } else {
+            tracing::info!("Cloning {full_name} repository");
+            git2::Repository::clone(&repo_url, &repo_disk_path)?
         };
 
         Ok(Self { repo })

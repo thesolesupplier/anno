@@ -106,7 +106,7 @@ pub fn get_pr_body(summary: ai::PrSummary, pr: &PullRequest, issues: &[Issue]) -
     let mut body = String::new();
 
     if let Some(existing_body) = &pr.body {
-        body = format!("{}<hr>{}\n", existing_body, body);
+        body = format!("{existing_body}<hr>{body}\n");
     }
 
     if !issues.is_empty() {

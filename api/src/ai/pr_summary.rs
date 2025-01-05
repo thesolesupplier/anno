@@ -55,7 +55,7 @@ impl PrSummary {
         );
 
         for detail in self.details {
-            body.push_str(&format!("- {}\n", detail));
+            body.push_str(&format!("- {detail}\n"));
         }
 
         body.push_str("</details>");
