@@ -1,6 +1,6 @@
 use crate::{ai, middleware::validation::GithubEvent};
 use anyhow::Result;
-use futures::future::try_join_all;
+use futures::future::{try_join, try_join_all};
 use hyper::StatusCode;
 use regex_lite::Regex;
 use serde::Deserialize;
@@ -34,19 +34,24 @@ pub async fn review(
 
     let diff = pr.get_diff().await?;
     let commit_messages = pr.get_commit_messages().await?;
-    let review = ai::PrReview::new(&diff, &commit_messages).await?;
 
     if action == "opened" {
         let issues = get_jira_issues(&pr).await?;
-        let summary = ai::PrSummary::new(&diff, &commit_messages, &issues).await?;
+
+        let (summary, review) = try_join(
+            ai::PrSummary::new(&diff, &commit_messages, &issues),
+            ai::PrReview::new(&diff, &commit_messages),
+        )
+        .await?;
+
         let pr_body = get_pr_body(summary, &pr, &issues);
 
-        pr.set_body(pr_body).await?;
-        pr.add_comment(&review.feedback).await?;
+        try_join(pr.set_body(pr_body), pr.add_comment(&review.feedback)).await?;
 
         return Ok(StatusCode::OK);
     }
 
+    let review = ai::PrReview::new(&diff, &commit_messages).await?;
     let anno_comments = pr.get_anno_comments().await?;
     let is_prev_positive = anno_comments.first().map_or(false, |c| c.is_positive());
 
@@ -54,8 +59,11 @@ pub async fn review(
         return Ok(StatusCode::OK);
     }
 
-    pr.clear_prev_comments(&anno_comments).await?;
-    pr.add_comment(&review.feedback).await?;
+    try_join(
+        pr.clear_prev_comments(&anno_comments),
+        pr.add_comment(&review.feedback),
+    )
+    .await?;
 
     Ok(StatusCode::OK)
 }

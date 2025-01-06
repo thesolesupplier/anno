@@ -4,7 +4,7 @@ mod slack;
 mod workflows;
 
 use anyhow::Result;
-use futures::future::try_join_all;
+use futures::future::{try_join, try_join_all};
 use git::Git;
 use regex_lite::Regex;
 use shared::{
@@ -55,8 +55,12 @@ async fn main() -> Result<(), AppError> {
         .get_commit_messages(old_commit, new_commit, &target_paths)?;
 
     let pull_requests = get_pull_requests(&run, &prev_runs.prev_runs).await?;
-    let jira_issues = get_jira_issues(&pull_requests, &commit_messages).await?;
-    let summary = ai::ReleaseSummary::new(&diff, &commit_messages).await?;
+
+    let (jira_issues, summary) = try_join(
+        get_jira_issues(&pull_requests, &commit_messages),
+        ai::ReleaseSummary::new(&diff, &commit_messages),
+    )
+    .await?;
 
     slack::ReleaseSummary {
         app_name: app_name.as_deref(),
