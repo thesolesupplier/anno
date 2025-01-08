@@ -11,7 +11,7 @@ The PR reviews and Jira tests cases are triggered via different webhook endpoint
 Webhook secrets are **required** for all webhooks.
 
 ### PR Reviews
-`POST` `/github/pull-request/bugs`
+`POST` `/github/pull-request/review`
 
 Expects a [pull_request](https://docs.github.com/en/webhooks/webhook-events-and-payloads#pull_request) webhook event.
 

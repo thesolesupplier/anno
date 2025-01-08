@@ -40,7 +40,7 @@ async fn main() {
         .nest(
             "/github",
             Router::new().route(
-                "/pull-request/bugs",
+                "/pull-request/review",
                 post(routes::github::pull_request::review),
             ),
         )
