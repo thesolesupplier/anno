@@ -124,7 +124,7 @@ pub fn get_pr_body(summary: ai::PrSummary, pr: &PullRequest, issues: &[Issue]) -
             body.push_str(&format!(
                 "- [{} - {}]({})\n",
                 issue.key,
-                issue.fields.summary,
+                issue.fields.summary.trim(),
                 issue.get_browse_url()
             ));
         }
