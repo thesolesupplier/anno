@@ -53,7 +53,7 @@ pub async fn review(
 
     let review = ai::PrReview::new(&diff, &commit_messages).await?;
     let anno_comments = pr.get_anno_comments().await?;
-    let is_prev_positive = anno_comments.first().map_or(false, |c| c.is_positive());
+    let is_prev_positive = anno_comments.first().is_some_and(|c| c.is_positive());
 
     if review.is_positive() && is_prev_positive {
         return Ok(StatusCode::OK);
