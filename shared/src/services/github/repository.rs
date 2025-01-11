@@ -124,11 +124,6 @@ pub struct RepoFile {
 }
 
 #[derive(Deserialize)]
-pub struct PullRequestFile {
-    pub filename: String,
-}
-
-#[derive(Deserialize)]
 pub struct Commit {
     pub commit: CommitDetails,
 }

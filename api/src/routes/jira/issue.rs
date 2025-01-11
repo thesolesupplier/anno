@@ -3,7 +3,9 @@ use hyper::StatusCode;
 use serde::Deserialize;
 use shared::{services::jira::Issue, utils::error::AppError};
 
-pub async fn status(JiraEvent(event): JiraEvent<JiraIssueEvent>) -> Result<StatusCode, AppError> {
+pub async fn test_cases(
+    JiraEvent(event): JiraEvent<JiraIssueEvent>,
+) -> Result<StatusCode, AppError> {
     if !event.should_trigger_test_cases() {
         return Ok(StatusCode::OK);
     }

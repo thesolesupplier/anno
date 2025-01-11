@@ -26,7 +26,7 @@ The following environment variables are **required**:
 - `GITHUB_WEBHOOK_SECRET`
 
 ### Jira Test Cases
-`POST` `/jira/issue/:key/status`
+`POST` `/jira/issue/test-cases`
 
 Expects an [issue_updated](https://developer.atlassian.com/cloud/jira/platform/webhooks/#issue-webhooks) webhook event.
 
