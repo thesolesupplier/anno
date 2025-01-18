@@ -1,5 +1,8 @@
-name: Anno-bot
+name: Anno - Automated Release Summaries
 description: Creates a release summary of code changes between workflow runs and sends it to a Slack channel.
+branding:
+  icon: align-left
+  color: blue
 inputs:
   app_name:
     description: App name for the Slack message. Defaults to the repository name.
