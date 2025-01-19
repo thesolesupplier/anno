@@ -82,8 +82,7 @@ pub async fn get_jira_issues(pr: &PullRequest) -> Result<Vec<Issue>> {
         return Ok(Vec::new());
     }
 
-    let project_key = config::get("JIRA_PROJECT_KEY");
-    let key_regex = Regex::new(&format!(r"{project_key}-\d+")).expect("Valid regex");
+    let key_regex = Regex::new(r"\b([A-Z]{2,10})-\d+\b").expect("Valid regex");
 
     let mut keys = HashSet::new();
 

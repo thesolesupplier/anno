@@ -41,10 +41,6 @@ with:
   # Required if `jira_api_key` is provided.
   jira_base_url: ""
 
-  # Jira project key.
-  # Required if `jira_api_key` is provided.
-  jira_project_key:
-
   # Slack webhook URL for the release summary.
   # Required.
   slack_webhook_url: ""
@@ -61,7 +57,6 @@ jobs:
     uses: thesolesupplier/anno@v2
     needs:
       - prod-deploy
-      # Add other job names here if needed
 ```
 
 
