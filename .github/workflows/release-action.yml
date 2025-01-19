@@ -89,6 +89,7 @@ jobs:
         with:
           artifacts: ${{ env.ARTIFACTS }}
           tag: ${{ steps.version_info.outputs.major_version }}
+          makeLatest: true
           allowUpdates: true
 
       - name: Create Minor Version Release
