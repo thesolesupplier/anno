@@ -50,7 +50,7 @@ impl PrSummary {
 
     pub fn into_markdown_body(self) -> String {
         let mut body = format!(
-            "#### Summary\n{}\n<details><summary>Details</summary><br>\n\n",
+            "#### Summary\n\n{}\n<details><summary>Details</summary><br>\n\n",
             self.summary
         );
 
