@@ -62,7 +62,6 @@ impl WorkflowRuns {
             .header("Accept", "application/json")
             .header("User-Agent", "Anno")
             .query(&[
-                ("event", &run.event),
                 ("created", &format!("<{}", run.created_at)),
                 ("page", &page.to_string()),
             ])
@@ -87,7 +86,6 @@ pub struct WorkflowRun {
     pub head_sha: String,
     pub repository: Repository,
     pub actor: WorkflowRunActor,
-    pub event: String,
     path: String,
     created_at: String,
     conclusion: Option<String>,
