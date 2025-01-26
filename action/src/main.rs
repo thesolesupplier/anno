@@ -48,6 +48,12 @@ async fn main() -> Result<(), AppError> {
 
     if let Some(target_paths) = &target_paths {
         diff = target_paths.filter_diff(&diff);
+
+        if diff.is_empty() {
+            tracing::warn!("No changes found for the workflow's `on.push.paths`; skipping");
+            tracing::warn!("The values for this property may be incorrect if this is unexpected");
+            return Ok(());
+        }
     }
 
     let commit_messages = Git::init(&run.repository.full_name)
