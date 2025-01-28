@@ -100,6 +100,8 @@ async fn get_pull_requests(
         pull_requests.extend(prs);
     }
 
+    let mut pr_keys = HashSet::new();
+    pull_requests.retain(|pr| pr_keys.insert(pr.number));
     pull_requests.sort_by_key(|pr| pr.number);
 
     Ok(pull_requests)
