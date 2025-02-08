@@ -9,7 +9,8 @@ use shared::{
 pub struct ReleaseSummary<'a> {
     pub app_name: Option<&'a str>,
     pub jira_issues: Vec<Issue>,
-    pub prev_run: &'a WorkflowRun,
+    pub diff_url: String,
+    pub prev_run_url: Option<&'a String>,
     pub pull_requests: Vec<PullRequest>,
     pub run: &'a WorkflowRun,
     pub summary: ai::ReleaseSummary,
@@ -172,34 +173,39 @@ impl ReleaseSummary<'_> {
     }
 
     fn get_actions_block(&self) -> Value {
+        let mut elements = Vec::from([
+            json!({
+                "type": "button",
+                "text": {
+                    "type": "plain_text",
+                    "text": "Deployment",
+                },
+                "url": self.run.get_run_url()
+            }),
+            json!({
+                "type": "button",
+                "text": {
+                    "type": "plain_text",
+                    "text": "Diff",
+                },
+                "url": self.diff_url
+            }),
+        ]);
+
+        if let Some(prev_run_url) = self.prev_run_url {
+            elements.push(json!({
+                "type": "button",
+                "text": {
+                    "type": "plain_text",
+                    "text": "Rollback",
+                },
+                "url": prev_run_url
+            }));
+        }
+
         json!({
             "type": "actions",
-            "elements": [
-                {
-                    "type": "button",
-                    "text": {
-                        "type": "plain_text",
-                        "text": "Deployment",
-                    },
-                    "url": self.run.get_run_url()
-                },
-                {
-                    "type": "button",
-                    "text": {
-                        "type": "plain_text",
-                        "text": "Diff",
-                    },
-                    "url": self.run.repository.get_compare_url(&self.prev_run.head_sha, &self.run.head_sha)
-                },
-                {
-                    "type": "button",
-                    "text": {
-                        "type": "plain_text",
-                        "text": "Rollback",
-                    },
-                    "url": self.prev_run.get_run_url()
-                }
-            ]
+            "elements": elements
         })
     }
 
