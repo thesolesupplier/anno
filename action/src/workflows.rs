@@ -14,15 +14,18 @@ pub struct WorkflowRuns {
 }
 
 impl WorkflowRuns {
-    pub async fn get_prev_and_last_successful_runs(
+    pub async fn get_prev_runs_with_last_success_for_branch(
         run: &WorkflowRun,
     ) -> Result<Option<PrevRuns>, AppError> {
-        tracing::info!("Fetching previous successful run");
+        tracing::info!(
+            "Fetching previous and last successful workflow runs for {} branch",
+            run.head_branch
+        );
 
         let mut all_prev_runs: Vec<WorkflowRun> = Vec::new();
         let mut page = 1;
         loop {
-            let prev_runs = Self::get_prev_runs(run, page).await?.workflow_runs;
+            let prev_runs = Self::get_prev_runs(run, true, page).await?.workflow_runs;
 
             if prev_runs.is_empty() {
                 return Ok(None);
@@ -47,7 +50,38 @@ impl WorkflowRuns {
         }
     }
 
-    async fn get_prev_runs(run: &WorkflowRun, page: u8) -> Result<Self, AppError> {
+    pub async fn get_prev_successful_run(
+        run: &WorkflowRun,
+    ) -> Result<Option<WorkflowRun>, AppError> {
+        tracing::info!("Fetching last successful run for workflow");
+
+        let mut page = 1;
+        loop {
+            let prev_runs = Self::get_prev_runs(run, false, page).await?.workflow_runs;
+
+            if prev_runs.is_empty() {
+                return Ok(None);
+            }
+
+            for prev_run in prev_runs {
+                if prev_run.path != run.path {
+                    continue;
+                }
+
+                if prev_run.has_successful_attempt().await? {
+                    return Ok(Some(prev_run));
+                }
+            }
+
+            page += 1;
+        }
+    }
+
+    async fn get_prev_runs(
+        run: &WorkflowRun,
+        for_run_branch: bool,
+        page: u8,
+    ) -> Result<Self, AppError> {
         let gh_base_url = config::get("GITHUB_BASE_URL");
         let gh_token = AccessToken::get().await?;
 
@@ -56,7 +90,7 @@ impl WorkflowRuns {
             gh_base_url, run.repository.full_name
         );
 
-        let runs = reqwest::Client::new()
+        let mut request = reqwest::Client::new()
             .get(url)
             .bearer_auth(gh_token)
             .header("Accept", "application/json")
@@ -64,7 +98,13 @@ impl WorkflowRuns {
             .query(&[
                 ("created", &format!("<{}", run.created_at)),
                 ("page", &page.to_string()),
-            ])
+            ]);
+
+        if for_run_branch {
+            request = request.query(&[("branch", &run.head_branch)]);
+        }
+
+        let runs = request
             .send()
             .await?
             .error_for_status()
@@ -84,6 +124,7 @@ pub struct PrevRuns {
 #[derive(Deserialize)]
 pub struct WorkflowRun {
     pub head_sha: String,
+    pub head_branch: String,
     pub repository: Repository,
     pub actor: WorkflowRunActor,
     path: String,
