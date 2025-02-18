@@ -55,6 +55,10 @@ async fn handle_master_release(run: WorkflowRun, prev_runs: PrevRuns) -> Result<
         .get_diff_between_commits(old_commit, new_commit)
         .await?;
 
+    if diff.is_empty() {
+        return Ok(());
+    }
+
     let config_file = repo.get_file(&run.path).await?;
     let target_paths = WorkflowConfig::from_base64_str(&config_file.content)?.get_target_paths();
 
