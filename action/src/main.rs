@@ -56,6 +56,7 @@ async fn handle_master_release(run: WorkflowRun, prev_runs: PrevRuns) -> Result<
         .await?;
 
     if diff.is_empty() {
+        tracing::warn!("No changes found between commits; skipping");
         return Ok(());
     }
 

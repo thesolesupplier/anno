@@ -46,7 +46,7 @@ impl ReleaseSummary<'_> {
 
         message_blocks.push(self.get_actions_block());
         message_blocks.push(json!({ "type": "divider" }));
-        message_blocks.push(self.get_deployed_by_block());
+        message_blocks.push(self.get_metadata_block());
 
         reqwest::Client::new()
             .put(config::get("SLACK_WEBHOOK_URL"))
@@ -216,7 +216,7 @@ impl ReleaseSummary<'_> {
         })
     }
 
-    fn get_deployed_by_block(&self) -> Value {
+    fn get_metadata_block(&self) -> Value {
         json!({
             "type": "context",
             "elements": [
@@ -233,6 +233,11 @@ impl ReleaseSummary<'_> {
                     "type": "mrkdwn",
                     "text": self.run.actor.login
                 },
+                {
+                    "type": "mrkdwn",
+                    "text": format!("*Branch:* {}", self.run.head_branch)
+                }
+
             ]
         })
     }
