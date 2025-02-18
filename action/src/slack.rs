@@ -221,21 +221,17 @@ impl ReleaseSummary<'_> {
             "type": "context",
             "elements": [
                 {
-                    "type": "mrkdwn",
-                    "text": format!("*Deployed by:*")
-                },
-                {
                     "type": "image",
                     "image_url": self.run.actor.avatar_url,
                     "alt_text": self.run.actor.login
                 },
                 {
                     "type": "mrkdwn",
-                    "text": self.run.actor.login
+                    "text": format!("Deployer: *{}*",self.run.actor.login)
                 },
                 {
                     "type": "mrkdwn",
-                    "text": format!("*Branch:* {}", self.run.head_branch)
+                    "text": format!("🪧 Branch: *{}*", self.run.head_branch)
                 }
 
             ]
