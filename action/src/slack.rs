@@ -7,9 +7,10 @@ use shared::{
 };
 
 pub struct ReleaseSummary<'a> {
-    pub app_name: Option<&'a str>,
+    pub app_name: String,
     pub jira_issues: Vec<Issue>,
     pub diff_url: String,
+    pub compare_to_master_url: String,
     pub prev_run_url: Option<&'a String>,
     pub pull_requests: Vec<PullRequest>,
     pub run: &'a WorkflowRun,
@@ -59,13 +60,11 @@ impl ReleaseSummary<'_> {
     }
 
     fn get_header_block(&self) -> Value {
-        let app_name = self.app_name.unwrap_or(&self.run.repository.name);
-
         json!({
             "type": "header",
             "text": {
                 "type": "plain_text",
-                "text": format!("{app_name} release :rocket:"),
+                "text": format!("{} release :rocket:", self.app_name),
                 "emoji": true
             }
         })
@@ -189,6 +188,14 @@ impl ReleaseSummary<'_> {
                     "text": "Diff",
                 },
                 "url": self.diff_url
+            }),
+            json!({
+                "type": "button",
+                "text": {
+                    "type": "plain_text",
+                    "text": "Compare to master",
+                },
+                "url": self.compare_to_master_url
             }),
         ]);
 

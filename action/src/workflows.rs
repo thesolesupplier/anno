@@ -116,6 +116,12 @@ impl WorkflowRuns {
     }
 }
 
+#[derive(Deserialize)]
+pub struct WorkflowRepo {
+    url: String,
+    full_name: String,
+}
+
 pub struct PrevRuns {
     pub last_successful: WorkflowRun,
     pub prev_runs: Vec<WorkflowRun>,
@@ -125,9 +131,9 @@ pub struct PrevRuns {
 pub struct WorkflowRun {
     pub head_sha: String,
     pub head_branch: String,
-    pub repository: Repository,
+    pub repository: WorkflowRepo,
     pub actor: WorkflowRunActor,
-    path: String,
+    pub path: String,
     created_at: String,
     conclusion: Option<String>,
     html_url: String,
@@ -135,11 +141,11 @@ pub struct WorkflowRun {
 }
 
 impl WorkflowRun {
-    pub async fn get_by_id(full_repo_name: &String, run_id: &String) -> Result<Self> {
+    pub async fn get_by_id(repo_name: &String, run_id: &String) -> Result<Self> {
         tracing::info!("Fetching workflow run {run_id}");
 
         let gh_token = AccessToken::get().await?;
-        let url = format!("https://api.github.com/repos/{full_repo_name}/actions/runs/{run_id}");
+        let url = format!("https://api.github.com/repos/{repo_name}/actions/runs/{run_id}");
 
         let workflow_run = reqwest::Client::new()
             .get(url)
@@ -212,11 +218,24 @@ impl WorkflowRun {
         &self.html_url
     }
 
-    pub async fn get_config(&self) -> Result<WorkflowConfig> {
-        let config_file = self.repository.get_file(&self.path).await?;
-        let config = WorkflowConfig::from_base64_str(&config_file.content)?;
+    pub async fn get_repo(&self) -> Result<Repository> {
+        tracing::info!("Fetching workflow repository");
 
-        Ok(config)
+        let gh_token = AccessToken::get().await?;
+
+        let repo = reqwest::Client::new()
+            .get(&self.repository.url)
+            .bearer_auth(gh_token)
+            .header("Accept", "application/json")
+            .header("User-Agent", "Anno")
+            .send()
+            .await?
+            .error_for_status()
+            .inspect_err(|e| tracing::error!("Error getting workflow run: {e}"))?
+            .json::<Repository>()
+            .await?;
+
+        Ok(repo)
     }
 }
 

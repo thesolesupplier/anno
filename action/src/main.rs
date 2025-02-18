@@ -8,17 +8,20 @@ use futures::future::{try_join, try_join3, try_join_all};
 use git::Git;
 use regex_lite::Regex;
 use shared::{
-    services::{github::PullRequest, jira::Issue},
+    services::{
+        github::{PullRequest, Repository},
+        jira::Issue,
+    },
     utils::{config, error::AppError},
 };
 use std::collections::HashSet;
-use workflows::{PrevRuns, WorkflowRun, WorkflowRuns};
+use workflows::{PrevRuns, WorkflowConfig, WorkflowRun, WorkflowRuns};
 
 #[tokio::main]
 async fn main() -> Result<(), AppError> {
     config::load();
 
-    let repo = config::get("GITHUB_REPOSITORY");
+    let repo_name = config::get("GITHUB_REPOSITORY");
     let run_id = config::get("GITHUB_RUN_ID");
 
     tracing_subscriber::fmt()
@@ -26,7 +29,7 @@ async fn main() -> Result<(), AppError> {
         .with_target(false)
         .init();
 
-    let run = WorkflowRun::get_by_id(&repo, &run_id).await?;
+    let run = WorkflowRun::get_by_id(&repo_name, &run_id).await?;
 
     if run.has_prev_successful_attempt().await? {
         tracing::info!("Already previously deployed, skipping");
@@ -37,22 +40,23 @@ async fn main() -> Result<(), AppError> {
         handle_master_release(run, prev_runs).await
     } else {
         tracing::info!("No previous successful run found for branch, summarising run commit");
-        handle_branch_release(run).await
+        handle_non_master_release(run).await
     }
 }
 
 async fn handle_master_release(run: WorkflowRun, prev_runs: PrevRuns) -> Result<(), AppError> {
-    let app_name = config::get_optional("APP_NAME");
+    let repo = run.get_repo().await?;
+    let app_name = config::get_optional("APP_NAME").unwrap_or(repo.name.clone());
 
     let new_commit = &run.head_sha;
     let old_commit = &prev_runs.last_successful.head_sha;
 
-    let mut diff = run
-        .repository
+    let mut diff = repo
         .get_diff_between_commits(old_commit, new_commit)
         .await?;
 
-    let target_paths = run.get_config().await?.get_target_paths();
+    let config_file = repo.get_file(&run.path).await?;
+    let target_paths = WorkflowConfig::from_base64_str(&config_file.content)?.get_target_paths();
 
     if let Some(target_paths) = &target_paths {
         diff = target_paths.filter_diff(&diff);
@@ -64,9 +68,12 @@ async fn handle_master_release(run: WorkflowRun, prev_runs: PrevRuns) -> Result<
         }
     }
 
-    let repo = Git::init(&run.repository.full_name).await?;
-    let commit_messages = repo.get_commit_messages(old_commit, new_commit, &target_paths)?;
-    let pull_requests = get_pull_requests(&run, Some(&prev_runs.prev_runs)).await?;
+    let commit_messages = Git::init(&repo.full_name).await?.get_commit_messages(
+        old_commit,
+        new_commit,
+        &target_paths,
+    )?;
+    let pull_requests = get_pull_requests(&run, Some(&prev_runs.prev_runs), &repo).await?;
 
     let (jira_issues, summary) = try_join(
         get_jira_issues(&pull_requests, &commit_messages),
@@ -74,12 +81,14 @@ async fn handle_master_release(run: WorkflowRun, prev_runs: PrevRuns) -> Result<
     )
     .await?;
 
-    let diff_url = run.repository.get_compare_url(old_commit, new_commit);
+    let diff_url = repo.get_compare_url(old_commit, new_commit);
     let prev_run_url = prev_runs.last_successful.get_run_url();
+    let compare_to_master_url = repo.get_compare_to_master_url(new_commit);
 
     slack::ReleaseSummary {
-        app_name: app_name.as_deref(),
+        app_name,
         diff_url,
+        compare_to_master_url,
         prev_run_url: Some(prev_run_url),
         jira_issues,
         pull_requests,
@@ -90,19 +99,21 @@ async fn handle_master_release(run: WorkflowRun, prev_runs: PrevRuns) -> Result<
     .await
 }
 
-async fn handle_branch_release(run: WorkflowRun) -> Result<(), AppError> {
-    let app_name = config::get_optional("APP_NAME");
+async fn handle_non_master_release(run: WorkflowRun) -> Result<(), AppError> {
+    let repo = run.get_repo().await?;
+    let app_name = config::get_optional("APP_NAME").unwrap_or(repo.name.clone());
 
     let (diff, pull_requests, commit_message) = try_join3(
-        run.repository.get_diff_for_commit(&run.head_sha),
-        get_pull_requests(&run, None),
-        run.repository.get_commit_message(&run.head_sha),
+        repo.get_diff_for_commit(&run.head_sha),
+        get_pull_requests(&run, None, &repo),
+        repo.get_commit_message(&run.head_sha),
     )
     .await?;
 
     let prev_run = WorkflowRuns::get_prev_successful_run(&run).await?;
     let prev_run_url = prev_run.as_ref().map(|run| run.get_run_url());
-    let diff_url = run.repository.get_commit_url(&run.head_sha);
+    let diff_url = repo.get_commit_url(&run.head_sha);
+    let compare_to_master_url = repo.get_compare_to_master_url(&run.head_sha);
 
     let (jira_issues, summary) = try_join(
         get_jira_issues(&pull_requests, &[commit_message.clone()]),
@@ -111,8 +122,9 @@ async fn handle_branch_release(run: WorkflowRun) -> Result<(), AppError> {
     .await?;
 
     slack::ReleaseSummary {
-        app_name: app_name.as_deref(),
+        app_name,
         diff_url,
+        compare_to_master_url,
         prev_run_url,
         jira_issues,
         pull_requests,
@@ -126,9 +138,9 @@ async fn handle_branch_release(run: WorkflowRun) -> Result<(), AppError> {
 async fn get_pull_requests(
     curr_run: &WorkflowRun,
     prev_runs: Option<&[WorkflowRun]>,
+    repo: &Repository,
 ) -> Result<Vec<PullRequest>> {
-    let mut pull_requests = curr_run
-        .repository
+    let mut pull_requests = repo
         .get_pull_requests_for_commit(&curr_run.head_sha)
         .await?;
 
@@ -137,8 +149,7 @@ async fn get_pull_requests(
     };
 
     for prev_run in prev_runs {
-        let prs = curr_run
-            .repository
+        let prs = repo
             .get_pull_requests_for_commit(&prev_run.head_sha)
             .await?;
 

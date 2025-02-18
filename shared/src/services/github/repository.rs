@@ -6,11 +6,12 @@ use serde::Deserialize;
 pub struct Repository {
     pub full_name: String,
     pub name: String,
+    pub html_url: String,
     pulls_url: String,
-    html_url: String,
     compare_url: String,
     contents_url: String,
     commits_url: String,
+    default_branch: String,
 }
 
 impl Repository {
@@ -164,6 +165,13 @@ impl Repository {
             .await?;
 
         Ok(diff)
+    }
+
+    pub fn get_compare_to_master_url(&self, commit: &str) -> String {
+        format!(
+            "{}/compare/{}...{}",
+            self.html_url, commit, self.default_branch
+        )
     }
 }
 
