@@ -3,8 +3,8 @@ mod middleware;
 mod routes;
 
 use axum::http::header::{ACCEPT, ACCEPT_ENCODING, AUTHORIZATION, CONTENT_TYPE, ORIGIN};
-use axum::{routing::post, Router};
-use routes::{github::pull_request, jira::issue};
+use axum::{Router, routing::post};
+use routes::github::pull_request;
 use shared::utils::config;
 use std::str::FromStr;
 use tower_http::{compression::CompressionLayer, cors::CorsLayer, trace::TraceLayer};
@@ -34,7 +34,6 @@ async fn main() {
         .allow_origin(tower_http::cors::Any);
 
     let app = Router::new()
-        .route("/jira/issue/test-cases", post(issue::test_cases))
         .route("/github/pull-request/review", post(pull_request::review))
         .layer(cors_layer)
         .layer(TraceLayer::new_for_http())

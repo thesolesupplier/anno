@@ -38,35 +38,6 @@ where
     }
 }
 
-pub struct JiraEvent<T>(pub T);
-
-impl<T, S> FromRequest<S> for JiraEvent<T>
-where
-    S: Send + Sync,
-    T: DeserializeOwned,
-{
-    type Rejection = (StatusCode, &'static str);
-
-    async fn from_request(req: Request, _: &S) -> Result<Self, Self::Rejection> {
-        let validate = config::get("WEBHOOK_VALIDATION") == "true";
-
-        let (parts, body) = req.into_parts();
-
-        let body_as_bytes = convert_body_to_bytes(body).await?;
-
-        if validate {
-            let token = config::get("JIRA_WEBHOOK_SECRET");
-            let signature = parts.headers.get("x-hub-signature");
-
-            validate_body(signature, &body_as_bytes, token)?;
-        }
-
-        let value = deseralise_body(body_as_bytes)?;
-
-        Ok(JiraEvent(value))
-    }
-}
-
 fn validate_body(
     signature_header: Option<&HeaderValue>,
     body: &Bytes,
