@@ -65,8 +65,6 @@ jobs:
             --env-var GITHUB_WEBHOOK_SECRET=${{ secrets.GH_WEBHOOK_SECRET }} \
             --env-var JIRA_API_KEY=${{ secrets.JIRA_API_KEY }} \
             --env-var JIRA_BASE_URL=https://thesolesupplier.atlassian.net \
-            --env-var JIRA_BOT_USER_ID=5e5ab50ba17f930c9b964563 \
-            --env-var JIRA_WEBHOOK_SECRET=${{ secrets.JIRA_WEBHOOK_SECRET }} \
             --env-var LOG_LEVEL=INFO \
             --env-var PR_COMMENT_ENABLED=true \
             --env-var REPOS_DIR=/tmp/repos \

@@ -1,6 +1,6 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use shared::services::chat_gpt;
 
 #[derive(Deserialize, Serialize, Debug)]

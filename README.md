@@ -76,6 +76,6 @@ If neither are specified, Anno will default to the entire repository.
 
 ## API Features
 
-Anno also has an API that can be deployed as an AWS HTTP Lambda that integrates with Jira and GitHub webhooks to review pull requests and add test cases to Jira issues.
+Anno also has an API that can be deployed as an AWS HTTP Lambda that integrates with GitHub webhooks to summarise and review pull requests.
 
 For more details, see the API's [README](api/README.md).
