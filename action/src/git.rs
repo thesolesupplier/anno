@@ -51,7 +51,7 @@ impl Git {
         &self,
         start_commit: &str,
         end_commit: &str,
-        target_paths: &Option<WorkflowTargetPaths>,
+        target_paths: &WorkflowTargetPaths,
     ) -> Result<Vec<String>> {
         tracing::info!("Getting commit messages between commits {start_commit} and {end_commit}");
 
@@ -84,16 +84,14 @@ impl Git {
     fn get_commit_message(
         &self,
         commit: Oid,
-        target_paths: &Option<WorkflowTargetPaths>,
+        target_paths: &WorkflowTargetPaths,
     ) -> Result<Option<String>> {
         let commit = self.repo.find_commit(commit)?;
 
-        if let Some(target_paths) = target_paths {
-            let affected_files = self.get_affected_files(&commit)?;
+        let affected_files = self.get_affected_files(&commit)?;
 
-            if !affected_files.iter().any(|p| target_paths.is_included(p)) {
-                return Ok(None);
-            }
+        if !affected_files.iter().any(|p| target_paths.is_included(p)) {
+            return Ok(None);
         }
 
         let message = commit.message().unwrap_or_default().to_string();

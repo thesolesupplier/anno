@@ -4,7 +4,7 @@ use glob::Pattern;
 use regex_lite::Regex;
 use serde::Deserialize;
 use shared::{
-    services::github::{repository::Repository, AccessToken, IGNORED_REPO_PATHS},
+    services::github::{AccessToken, IGNORED_REPO_PATHS, repository::Repository},
     utils::{config, error::AppError},
 };
 
@@ -253,25 +253,32 @@ impl WorkflowConfig {
         Ok(config)
     }
 
-    pub fn get_target_paths(&self) -> Option<WorkflowTargetPaths> {
+    pub fn push_config(&self) -> Option<&WorkflowOnPushConfig> {
+        self.on.as_ref()?.push.as_ref()
+    }
+
+    pub fn get_target_paths(&self) -> WorkflowTargetPaths {
         WorkflowTargetPaths::from_workflow_config(self)
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct WorkflowTargetPaths {
     pub included: Vec<Pattern>,
     pub excluded: Vec<Pattern>,
 }
 
 impl WorkflowTargetPaths {
-    pub fn from_workflow_config(config: &WorkflowConfig) -> Option<Self> {
-        let push_config = config.on.as_ref()?.push.as_ref()?;
+    pub fn from_workflow_config(config: &WorkflowConfig) -> Self {
+        let Some(push_config) = config.push_config() else {
+            return Self::default();
+        };
+
         let paths = push_config.paths.as_deref().unwrap_or_default();
         let ignored_paths = push_config.paths_ignore.as_deref().unwrap_or_default();
 
         if paths.is_empty() && ignored_paths.is_empty() {
-            return None;
+            return Self::default();
         }
 
         let (included, mut excluded) = paths
@@ -289,10 +296,10 @@ impl WorkflowTargetPaths {
                 .collect::<Vec<_>>()
         };
 
-        Some(Self {
+        Self {
             included: create_patterns(included),
             excluded: create_patterns(excluded),
-        })
+        }
     }
 
     pub fn filter_diff(&self, diff: &str) -> String {
@@ -332,7 +339,7 @@ struct WorkflowOnConfig {
 }
 
 #[derive(Deserialize)]
-struct WorkflowOnPushConfig {
+pub struct WorkflowOnPushConfig {
     paths: Option<Vec<String>>,
     #[serde(rename = "paths-ignore")]
     paths_ignore: Option<Vec<String>>,

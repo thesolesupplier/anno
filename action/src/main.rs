@@ -4,7 +4,7 @@ mod slack;
 mod workflows;
 
 use anyhow::Result;
-use futures::future::{try_join, try_join3, try_join_all};
+use futures::future::{try_join, try_join_all, try_join3};
 use git::Git;
 use regex_lite::Regex;
 use shared::{
@@ -63,14 +63,12 @@ async fn handle_master_release(run: WorkflowRun, prev_runs: PrevRuns) -> Result<
     let config_file = repo.get_file(&run.path).await?;
     let target_paths = WorkflowConfig::from_base64_str(&config_file.content)?.get_target_paths();
 
-    if let Some(target_paths) = &target_paths {
-        diff = target_paths.filter_diff(&diff);
+    diff = target_paths.filter_diff(&diff);
 
-        if diff.is_empty() {
-            tracing::warn!("No changes found for the workflow's `on.push.paths`; skipping");
-            tracing::warn!("This property's values may be incorrect if this is unexpected");
-            return Ok(());
-        }
+    if diff.is_empty() {
+        tracing::warn!("No changes found for the workflow's `on.push.paths`; skipping");
+        tracing::warn!("This property's values may be incorrect if this is unexpected");
+        return Ok(());
     }
 
     let commit_messages = Git::init(&repo.full_name).await?.get_commit_messages(
