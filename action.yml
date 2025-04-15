@@ -26,9 +26,12 @@ inputs:
   slack_webhook_url:
     description: Slack webhook URL for the release summary.
     required: true
+  paths:
+    description: Newline or comma-separated list of glob patterns to filter files used in analysis.
+    required: false
 
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Set reusable variables
       shell: bash
@@ -75,6 +78,7 @@ runs:
         GITHUB_TOKEN: ${{ inputs.github_token }}
         JIRA_API_KEY: ${{ inputs.jira_api_key }}
         JIRA_BASE_URL: ${{ inputs.jira_base_url }}
+        PATHS: ${{ inputs.paths }}
         REPOS_DIR: ./repos
         SLACK_MESSAGE_ENABLED: true
         SLACK_WEBHOOK_URL: ${{ inputs.slack_webhook_url }}

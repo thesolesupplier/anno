@@ -44,6 +44,10 @@ with:
   # Slack webhook URL for the release summary.
   # Required.
   slack_webhook_url: ""
+
+  # Newline-separated list of glob patterns for file paths to include or exclude in analysis.
+  # Default: All paths.
+  paths: ""
 ```
 
 **Note:** Ensure Anno requires the previous job(s) to complete first so that it runs only after your deployment is successful:
@@ -59,10 +63,25 @@ jobs:
       - prod-deploy
 ```
 
+### File Filtering with paths
 
-## Monorepo Usage
+You can control which files Anno analyses using the paths input. This is useful for any repository but especially helpful in monorepos:
 
-There shouldn't be any special setup required for monorepos. Anno will download the workflow file and use the [`on.push.paths`](https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#example-including-paths) and [`on.push.paths-ignore`](https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#example-excluding-paths) properties to determine which files and commits to include in its analysis:
+```yaml
+uses: thesolesupplier/anno@v3
+with:
+  paths: |-
+    sub-project/**
+    !sub-project/docs/**
+```
+
+This accepts newline or comma-separated glob patterns and takes precedence over any [`on.push.paths`](https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#example-including-paths) and [`on.push.paths-ignore`](https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#example-excluding-paths)  settings in your workflow file.
+
+If no paths are provided, Anno will fall back to using the workflow file's `on.push` settings. If neither are present, Anno will default to the entire repository.
+
+### Monorepo Usage
+
+There’s no special setup required for monorepos. Anno automatically reads your workflow file and uses the [`on.push.paths`](https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#example-including-paths) and [`on.push.paths-ignore`](https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#example-excluding-paths) properties to determine which files and commits to include in its analysis:
 
 ```yaml
 on:
@@ -72,7 +91,7 @@ on:
       - '!sub-project/docs/**'
 ```
 
-If neither are specified, Anno will default to the entire repository.
+However, for more precise control (or to override the workflow config), use the paths input as shown above.
 
 ## API Features
 

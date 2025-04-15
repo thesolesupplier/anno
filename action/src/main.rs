@@ -1,6 +1,7 @@
 mod ai;
 mod git;
 mod slack;
+mod target_paths;
 mod workflows;
 
 use anyhow::Result;
@@ -15,6 +16,7 @@ use shared::{
     utils::{config, error::AppError},
 };
 use std::collections::HashSet;
+use target_paths::TargetPaths;
 use workflows::{PrevRuns, WorkflowConfig, WorkflowRun, WorkflowRuns};
 
 #[tokio::main]
@@ -60,14 +62,16 @@ async fn handle_master_release(run: WorkflowRun, prev_runs: PrevRuns) -> Result<
         return Ok(());
     }
 
-    let config_file = repo.get_file(&run.path).await?;
-    let target_paths = WorkflowConfig::from_base64_str(&config_file.content)?.get_target_paths();
+    let target_paths = repo
+        .get_file(&run.path)
+        .await
+        .and_then(WorkflowConfig::from_file)
+        .map(TargetPaths::new)?;
 
     diff = target_paths.filter_diff(&diff);
 
     if diff.is_empty() {
-        tracing::warn!("No changes found for the workflow's `on.push.paths`; skipping");
-        tracing::warn!("This property's values may be incorrect if this is unexpected");
+        tracing::warn!("No changes found for the configured paths; skipping");
         return Ok(());
     }
 
