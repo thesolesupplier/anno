@@ -1,4 +1,4 @@
-use super::workflows::WorkflowTargetPaths;
+use super::target_paths::TargetPaths;
 use anyhow::Result;
 use git2::{Commit, Oid};
 use shared::{services::github::AccessToken, utils::config};
@@ -51,7 +51,7 @@ impl Git {
         &self,
         start_commit: &str,
         end_commit: &str,
-        target_paths: &WorkflowTargetPaths,
+        target_paths: &TargetPaths,
     ) -> Result<Vec<String>> {
         tracing::info!("Getting commit messages between commits {start_commit} and {end_commit}");
 
@@ -84,13 +84,16 @@ impl Git {
     fn get_commit_message(
         &self,
         commit: Oid,
-        target_paths: &WorkflowTargetPaths,
+        target_paths: &TargetPaths,
     ) -> Result<Option<String>> {
         let commit = self.repo.find_commit(commit)?;
 
         let affected_files = self.get_affected_files(&commit)?;
 
-        if !affected_files.iter().any(|p| target_paths.is_included(p)) {
+        if !affected_files
+            .iter()
+            .any(|p| target_paths.is_path_included(p))
+        {
             return Ok(None);
         }
 

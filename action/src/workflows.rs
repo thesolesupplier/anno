@@ -1,10 +1,11 @@
 use anyhow::Result;
 use base64::prelude::*;
-use glob::Pattern;
-use regex_lite::Regex;
 use serde::Deserialize;
 use shared::{
-    services::github::{AccessToken, IGNORED_REPO_PATHS, repository::Repository},
+    services::github::{
+        AccessToken,
+        repository::{RepoFile, Repository},
+    },
     utils::{config, error::AppError},
 };
 
@@ -241,12 +242,12 @@ impl WorkflowRun {
 
 #[derive(Deserialize)]
 pub struct WorkflowConfig {
-    on: Option<WorkflowOnConfig>,
+    pub on: Option<WorkflowOnConfig>,
 }
 
 impl WorkflowConfig {
-    pub fn from_base64_str(content: &str) -> Result<Self> {
-        let decoded_config = BASE64_STANDARD.decode(content.replace('\n', ""))?;
+    pub fn from_file(file: RepoFile) -> Result<Self> {
+        let decoded_config = BASE64_STANDARD.decode(file.content.replace('\n', ""))?;
         let config_content = String::from_utf8(decoded_config)?;
         let config = serde_yaml::from_str(&config_content)?;
 
@@ -256,93 +257,18 @@ impl WorkflowConfig {
     pub fn push_config(&self) -> Option<&WorkflowOnPushConfig> {
         self.on.as_ref()?.push.as_ref()
     }
-
-    pub fn get_target_paths(&self) -> WorkflowTargetPaths {
-        WorkflowTargetPaths::from_workflow_config(self)
-    }
-}
-
-#[derive(Debug, Default)]
-pub struct WorkflowTargetPaths {
-    pub included: Vec<Pattern>,
-    pub excluded: Vec<Pattern>,
-}
-
-impl WorkflowTargetPaths {
-    pub fn from_workflow_config(config: &WorkflowConfig) -> Self {
-        let Some(push_config) = config.push_config() else {
-            return Self::default();
-        };
-
-        let paths = push_config.paths.as_deref().unwrap_or_default();
-        let ignored_paths = push_config.paths_ignore.as_deref().unwrap_or_default();
-
-        if paths.is_empty() && ignored_paths.is_empty() {
-            return Self::default();
-        }
-
-        let (included, mut excluded) = paths
-            .iter()
-            .filter(|p| IGNORED_REPO_PATHS.iter().all(|i| !p.contains(i)))
-            .partition::<Vec<_>, _>(|p| !p.starts_with('!'));
-
-        for path in ignored_paths {
-            excluded.push(path);
-        }
-
-        let create_patterns = |pths: Vec<&String>| {
-            pths.iter()
-                .map(|p| Pattern::new(p.strip_prefix('!').unwrap_or(p)).unwrap())
-                .collect::<Vec<_>>()
-        };
-
-        Self {
-            included: create_patterns(included),
-            excluded: create_patterns(excluded),
-        }
-    }
-
-    pub fn filter_diff(&self, diff: &str) -> String {
-        let re = Regex::new(r"b/([^ ]+)").unwrap();
-
-        let mut is_inside_ignored_file = false;
-        diff.lines()
-            .filter(|line| {
-                if line.starts_with("diff --git") {
-                    if let Some(caps) = re.captures(line) {
-                        let path = caps[1].to_string();
-
-                        let is_ignored_file = IGNORED_REPO_PATHS.iter().any(|p| path.contains(p));
-                        let is_non_target_file = !self.is_included(&path);
-
-                        is_inside_ignored_file = is_ignored_file || is_non_target_file;
-                    }
-                }
-
-                !is_inside_ignored_file
-            })
-            .collect::<Vec<_>>()
-            .join("\n")
-    }
-
-    pub fn is_included(&self, path: &str) -> bool {
-        let is_included = self.included.is_empty() || self.included.iter().any(|p| p.matches(path));
-        let is_excluded = self.excluded.iter().any(|p| p.matches(path));
-
-        is_included && !is_excluded
-    }
 }
 
 #[derive(Deserialize)]
-struct WorkflowOnConfig {
-    push: Option<WorkflowOnPushConfig>,
+pub struct WorkflowOnConfig {
+    pub push: Option<WorkflowOnPushConfig>,
 }
 
 #[derive(Deserialize)]
 pub struct WorkflowOnPushConfig {
-    paths: Option<Vec<String>>,
+    pub paths: Option<Vec<String>>,
     #[serde(rename = "paths-ignore")]
-    paths_ignore: Option<Vec<String>>,
+    pub paths_ignore: Option<Vec<String>>,
 }
 
 #[derive(Deserialize)]
