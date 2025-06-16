@@ -91,7 +91,7 @@ on:
       - '!sub-project/docs/**'
 ```
 
-However, for more precise control (or to override the workflow config), use the paths input as shown above.
+However, for more precise control (or to override the workflow config), use the `paths` input as shown above.
 
 ## API Features
 
