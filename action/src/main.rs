@@ -34,7 +34,7 @@ async fn main() -> Result<(), AppError> {
     let run = WorkflowRun::get_by_id(&repo_name, &run_id).await?;
 
     if run.has_prev_successful_attempt().await? {
-        tracing::info!("Already previously deployed, skipping");
+        tracing::warn!("Already previously deployed, skipping");
         return Ok(());
     }
 
