@@ -44,6 +44,15 @@ impl Issue {
         let jira_base_url = config::get("JIRA_BASE_URL");
         format!("{jira_base_url}/browse/{}", self.key)
     }
+
+    pub fn get_github_hyperlink(&self) -> String {
+        format!(
+            "[{} - {}]({})\n",
+            self.key,
+            self.fields.summary.trim(),
+            self.get_browse_url()
+        )
+    }
 }
 
 #[derive(Deserialize)]

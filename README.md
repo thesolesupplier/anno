@@ -81,7 +81,7 @@ If no paths are provided, Anno will fall back to using the workflow file's `on.p
 
 ### Monorepo Usage
 
-There’s no special setup required for monorepos. Anno automatically reads your workflow file and uses the [`on.push.paths`](https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#example-including-paths) and [`on.push.paths-ignore`](https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#example-excluding-paths) properties to determine which files and commits to include in its analysis:
+There should be no special setup required for monorepos. Anno uses your workflow's [`on.push.paths`](https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#example-including-paths) and [`on.push.paths-ignore`](https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#example-excluding-paths) properties to determine which files and commits to include in its analysis:
 
 ```yaml
 on:

@@ -94,7 +94,7 @@ pub async fn get_jira_issues(pr: &PullRequest) -> Result<Vec<Issue>> {
         for key in key_regex.find_iter(body) {
             keys.insert(key.as_str());
         }
-    };
+    }
 
     let requests = keys.into_iter().map(Issue::get_by_key).collect::<Vec<_>>();
 
@@ -117,19 +117,14 @@ pub fn get_pr_body(summary: ai::PrSummary, pr: &PullRequest, issues: &[Issue]) -
     }
 
     if !issues.is_empty() {
-        body.push_str("#### Tickets\n");
+        body.push_str("**Tickets**\n");
 
         for issue in issues {
-            body.push_str(&format!(
-                "- [{} - {}]({})\n",
-                issue.key,
-                issue.fields.summary.trim(),
-                issue.get_browse_url()
-            ));
+            body.push_str(&format!("- {}\n", issue.get_github_hyperlink()));
         }
     }
 
-    body.push_str(&summary.into_markdown_body());
+    body.push_str(&format!("**Summary**\n\n{}", summary.summary));
 
     body
 }
